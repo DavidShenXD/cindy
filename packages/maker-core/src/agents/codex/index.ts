@@ -3177,7 +3177,7 @@ assertRouteCurrent();
               ...(!remoteHostId && historyHome ? { runtimeCodexHome: historyHome } : {}),
               // 受邀者任务的 app-server 与账号会话一样走按 host 分开的 proxy(鉴权注入方式冻结在这个 host 上)，
               // 不改写本机用户任务共用的 proxy 状态。
-              ...(key.startsWith('local-account:') || key.startsWith(LOCAL_GUEST_HOST_PREFIX)
+              ...(key.startsWith('local-account:') || key.startsWith(LOCAL_GUEST_HOST_PREFIX) || deviceHostedGuestProviderId
                 ? { accountHostKey: `${key}:${generation}` } : {}),
               credentialMode: spawnCredentialMode,
               ...(localAuthPolicy === 'isolated'

@@ -112,6 +112,7 @@ interface MessagePosition {
 
 interface ForkNativeSource {
   agentKind: DbAgentKind;
+  agentDeviceId: string | null;
   sdkSessionId: string | null;
   model: string;
   providerId: string | null;
@@ -136,6 +137,7 @@ interface ForkTimelineMessage {
 
 interface ParsedAgentSwitchBoundary {
   fromAgentKind: DbAgentKind;
+  fromAgentDeviceId?: string | null;
   toAgentKind?: DbAgentKind;
   fromModel: string | null;
   fromProviderId?: string | null;
@@ -305,6 +307,9 @@ function parseAgentSwitchBoundary(content: string): ParsedAgentSwitchBoundary | 
         : undefined;
     return {
       fromAgentKind: parsed.fromAgentKind,
+      ...(Object.hasOwn(parsed, 'fromAgentDeviceId')
+        ? { fromAgentDeviceId: typeof parsed.fromAgentDeviceId === 'string' ? parsed.fromAgentDeviceId : null }
+        : {}),
       toAgentKind,
       fromModel: typeof parsed.fromModel === 'string' ? parsed.fromModel : null,
       ...(Object.hasOwn(parsed, 'fromProviderId')
@@ -375,6 +380,7 @@ async function resolveForkNativeSource(
   sourceSessionId: string,
   source: {
     agentKind: string;
+    agentDeviceId?: string | null;
     sdkSessionId: string | null;
     model: string;
     providerId: string | null;
@@ -465,6 +471,8 @@ async function resolveForkNativeSource(
     }
     return {
       agentKind: parsed.fromAgentKind,
+      agentDeviceId: Object.hasOwn(parsed, 'fromAgentDeviceId')
+        ? parsed.fromAgentDeviceId ?? null : source.agentDeviceId ?? null,
       sdkSessionId: parsed.fromSdkSessionId,
       model,
       providerId,
@@ -476,6 +484,7 @@ async function resolveForkNativeSource(
     if (rebuildBoundary?.sourceAgentKind) {
       return {
         agentKind: rebuildBoundary.sourceAgentKind,
+        agentDeviceId: source.agentDeviceId ?? null,
         sdkSessionId: null,
         model: rebuildBoundary.sourceModel ?? source.model,
         providerId: Object.hasOwn(rebuildBoundary, 'sourceProviderId')
@@ -494,6 +503,7 @@ async function resolveForkNativeSource(
     }
     return {
       agentKind: normalizeDbAgentKind(source.agentKind),
+      agentDeviceId: source.agentDeviceId ?? null,
       sdkSessionId: null,
       model: source.model,
       providerId: source.providerId,
@@ -507,6 +517,7 @@ async function resolveForkNativeSource(
   }
   return {
     agentKind: normalizeDbAgentKind(source.agentKind),
+    agentDeviceId: source.agentDeviceId ?? null,
     sdkSessionId: source.sdkSessionId,
     model: source.model,
     providerId: source.providerId,
@@ -937,7 +948,7 @@ export async function forkSessionAtMessage(
     forkSource.agentKind,
   );
   if (!usesTailTurnFork && forkSource.sdkSessionId) {
-    claudeAnchorIndex = source.agentDeviceId ? null : await loadClaudeTranscriptAnchorIndex({
+    claudeAnchorIndex = forkSource.agentDeviceId ? null : await loadClaudeTranscriptAnchorIndex({
       sdkSessionId: forkSource.sdkSessionId,
       workingDir: source.workingDir,
     }).catch(() => null);
@@ -995,8 +1006,8 @@ export async function forkSessionAtMessage(
       // agent 实例字段 —— R4 竞态 #1)。
       remoteHostId: source.remoteHostId ?? null,
     };
-    const forkResult = await (source.agentDeviceId
-      ? forkRemoteAgentSession(remoteAgentInvoker(source.agentDeviceId, remoteBackgroundInvoke), {
+    const forkResult = await (forkSource.agentDeviceId
+      ? forkRemoteAgentSession(remoteAgentInvoker(forkSource.agentDeviceId, remoteBackgroundInvoke), {
           sourceSdkSessionId: forkSource.sdkSessionId,
           upToMessageId: assistantUuid,
           lastTurnId,
@@ -1013,7 +1024,7 @@ export async function forkSessionAtMessage(
         // 这里刻意用 isCodex(非 usesTailTurnFork):CODEX_FORK_STATE_UNAVAILABLE 是 codex 专属
         // 错误码 + 文案,只有真 codex 失败才包装。pi 与 cc 一样裸抛原始错误(不会拿到指名道姓
         // 错对象的 "Codex 状态不可用" 提示)。改成 usesTailTurnFork 会让 pi 误报成 codex 错误。
-        if (!isCodex || source.agentDeviceId) throw err;
+        if (!isCodex || forkSource.agentDeviceId) throw err;
         if (isCodexHistoryRecoveryRequired(err) && (sourceMessages.length > 0 || target.role === 'user')) {
           // 首条 user 之前的空前缀也是合法 fork；其它错误不得变成丢上下文的新任务。
           needsHistoryRecovery = true;
@@ -1086,7 +1097,7 @@ export async function forkSessionAtMessage(
         // 轮 26 HIGH-1:远端会话 fork 必须继承 remoteHostId —— 缺失会落成
         // NULL, 子会话被下游当成本地会话处理(本地 transport/MCP 全错)。
         remoteHostId: source.remoteHostId ?? null,
-        agentDeviceId: source.agentDeviceId ?? null,
+        agentDeviceId: forkSource.agentDeviceId,
         codexHistoryHasProductPrompt: source.codexHistoryHasProductPrompt,
         parentSessionId: source.id,
         forkedAtMessageId: messageClientId,

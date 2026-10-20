@@ -1194,6 +1194,40 @@ describe('forkSessionAtMessage', () => {
     expect(forkSdkSessionMock).not.toHaveBeenCalled();
   });
 
+  // Review #6563: native history stays on the recorded device across switches.
+  // Cover remote->remote, local->remote and remote->local through orchestration.
+  it.each([
+    ['old-device', 'current-device'],
+    [null, 'current-device'],
+    ['old-device', null],
+  ])('forks the historical device %s after moving to %s', async (fromAgentDeviceId, currentDevice) => {
+    selectQueue.push([makeSourceRow({ agentKind: 'codex', agentDeviceId: currentDevice })]);
+    selectQueue.push([makeMessageRow({ clientId: 'target-user', createdAt: 3000, rowid: 30 })]);
+    selectQueue.push([]);
+    selectQueue.push([makeSourceRow({ agentKind: 'codex', agentDeviceId: fromAgentDeviceId })]);
+    queryOneMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      content: JSON.stringify({ fromAgentKind: 'codex', fromAgentDeviceId, fromProviderId: 'openai',
+        fromModel: 'gpt-5.4', fromSdkSessionId: 'historical-native' }),
+      created_at: 4000, rowid: 40,
+    });
+    remoteInvokeMock.mockImplementation(async (_device, _channel, [request]) => ({
+      ok: true, result: request.op === 'caps'
+        ? { version: 1, agents: [], maxRuns: 16, uploadChunkBytes: 1024, maxPayloadBytes: 2048, nativeFork: true }
+        : { newSdkSessionId: 'native-child', uuidMap: [] },
+    }));
+    await forkSessionAtMessage('src-session', 'target-user');
+    if (fromAgentDeviceId) {
+      expect(remoteInvokeMock).toHaveBeenLastCalledWith(fromAgentDeviceId, 'maker:remote-agent:v1', [
+        expect.objectContaining({ op: 'fork', sourceSdkSessionId: 'historical-native' }),
+      ]);
+      expect(forkSdkSessionMock).not.toHaveBeenCalled();
+    } else {
+      expect(forkSdkSessionMock).toHaveBeenCalledWith('codex', expect.objectContaining({ sourceSdkSessionId: 'historical-native' }));
+      expect(remoteInvokeMock).not.toHaveBeenCalled();
+    }
+    expect((txCalls[0].args as { newSession: Record<string, unknown> }).newSession.agentDeviceId).toBe(fromAgentDeviceId);
+  });
+
   it('refuses the encrypted-content fork for a Codex task whose agent runs on another computer', async () => {
     selectQueue.push([makeSourceRow({ agentKind: 'codex', agentDeviceId: 'device-b' })]);
 

@@ -2136,8 +2136,7 @@ export function createRemoteAgentHost(deps: RemoteAgentHostDeps) {
             && !deps.reshare.allows(controller, request.reshareKey)) failProviderNotAllowed();
         };
         assertAccess();
-        if (!deps.forkHosted || !deps.isAgentAvailable(request.agentKind)
-          || (guest && (!GUEST_SUPPORTED_AGENTS.has(request.agentKind) || !deps.providerAccess || !deps.bindGuestProviderRoute))) {
+        if (guest && (!GUEST_SUPPORTED_AGENTS.has(request.agentKind) || !deps.providerAccess || !deps.bindGuestProviderRoute)) {
           fail('REMOTE_AGENT_PEER_TOO_OLD', 'update Cindy on the computer running this task to fork it');
         }
         if (guest && !(await guestOwnsSession(controller, request.relay, request.sourceSdkSessionId))) {
@@ -2176,6 +2175,9 @@ export function createRemoteAgentHost(deps: RemoteAgentHostDeps) {
             fail(safe.code, safe.message);
           }
         } else {
+          if (!deps.forkHosted || !deps.isAgentAvailable(request.agentKind)) {
+            fail('REMOTE_AGENT_PEER_TOO_OLD', 'update Cindy on the computer running this task to fork it');
+          }
           const workingDir = path.join(shadowSessionRoot(controller, hostSessionId), 'fs', 'workspace', ...Array.from({ length: MAX_ANCESTOR_LEVELS }, () => 'p'));
           // Idle runs may have released their shadow workspace; native history is retained.
           const native = await withShadowLock(hostSessionId, async () => {
