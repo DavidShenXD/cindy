@@ -10708,6 +10708,7 @@
       "recent": "最近",
       "browseFolder": "別のフォルダを選択",
       "browseProjectFolder": "別のプロジェクトフォルダを選択",
+      "browseFailed": "フォルダー選択画面を開けませんでした。もう一度お試しください。",
       "dialogue": "対話",
       "dialogueOrSelectProject": "対話またはプロジェクトを選択",
       "searchProjects": "プロジェクトを検索",
@@ -15026,6 +15027,25 @@
       "remoteWorkerLoading": "{{device}} 上のタスクを読み込み中…",
       "remoteWorkerUnreachable": "{{device}} に現在接続できません。再接続すると、この Worker のタスクが再び表示されます。",
       "closeAria": "閉じる"
+    },
+    "workerProject": {
+      "missingDirectory": "このディレクトリは存在しません。別のディレクトリを選択してください。",
+      "label": "プロジェクト",
+      "current": "現在のプロジェクト",
+      "shared": "Lead と共有：{{project}} · {{branch}}",
+      "direct": "{{project}} の {{branch}} ブランチで直接変更します",
+      "inferred": "Lead の最近の操作から特定しました",
+      "dirty": "このディレクトリには未コミットの変更があります。Worker はその状態から作業を続けます。",
+      "newWorktree": "Worker 用の worktree を作成",
+      "from": "分岐元",
+      "fromSuffix": "（変更可能）",
+      "splitWarning": "{{branch}} の最新コミットから新しいブランチを作成します。Lead の未コミットの変更は引き継がれません。その後の変更は互いに反映されず、マージが必要です。",
+      "dialogue": "現在のセッションにプロジェクトがないため、worktree は作成できません。Worker は {{directory}} で作業します。",
+      "notGit": "このディレクトリは Git リポジトリではないため、worktree は作成できません。Worker は {{directory}} で作業します。",
+      "emptyRepo": "このリポジトリにはまだコミットがないため、worktree を作成できません。Worker は {{directory}} で作業します。",
+      "detachedHead": "Detached HEAD · {{sha}}",
+      "directDetached": "{{project}} の {{branch}} で直接変更します",
+      "loadFailed": "プロジェクトのディレクトリを読み取れませんでした。"
     }
   },
   "splitGroup": {

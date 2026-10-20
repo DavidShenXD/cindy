@@ -10708,6 +10708,7 @@
       "recent": "最近",
       "browseFolder": "选择其他文件夹",
       "browseProjectFolder": "选择其他项目文件夹",
+      "browseFailed": "无法打开文件夹选择框，请重试。",
       "dialogue": "对话",
       "dialogueOrSelectProject": "对话或选择项目",
       "searchProjects": "搜索项目",
@@ -15026,6 +15027,25 @@
       "remoteWorkerLoading": "正在读取 {{device}} 上的任务…",
       "remoteWorkerUnreachable": "{{device}} 当前无法连接，恢复后会自动显示这个 Worker 的任务。",
       "closeAria": "关闭"
+    },
+    "workerProject": {
+      "missingDirectory": "目录已不存在，请重新选择。",
+      "label": "项目",
+      "current": "当前项目",
+      "shared": "与 Lead 共用：{{project}} · {{branch}}",
+      "direct": "将直接在 {{project}} 的 {{branch}} 分支上修改",
+      "inferred": "根据 Lead 最近的操作识别",
+      "dirty": "这个目录有未提交的改动，Worker 会在这些改动上继续工作。",
+      "newWorktree": "为 Worker 新建 worktree",
+      "from": "从",
+      "fromSuffix": "拉出（可更换）",
+      "splitWarning": "会从 {{branch}} 的最新提交拉出新分支。Lead 未提交的改动不会带过去，之后双方改动互不可见，需要再合并。",
+      "dialogue": "当前任务没有绑定项目，不能新建 worktree。Worker 将在 {{directory}} 工作。",
+      "notGit": "这个目录不是 Git 仓库，不能新建 worktree。Worker 将在 {{directory}} 工作。",
+      "emptyRepo": "仓库还没有任何提交，不能新建 worktree。Worker 将在 {{directory}} 工作。",
+      "detachedHead": "分离 HEAD · {{sha}}",
+      "directDetached": "将直接在 {{project}} 的 {{branch}} 上修改",
+      "loadFailed": "未能读取项目目录。"
     }
   },
   "splitGroup": {

@@ -1,3 +1,7 @@
+import { createOrcaWorkerProjectHandlers } from './orcaWorkerProjectHandlers';
+import { getTeamByWorkerSession } from '../localDb/orcaTeamStore';
+import { readWorkerProjectContext, createWorkerWorktree, rememberWorkerProject, probeWorkerProject } from './orcaWorkerProject';
+import type { WorkerWorktreeRequest } from '../../shared/orca-worker-project';
 import { captureAgentRequest as captureRequest, type CapturedAgentRequest } from './forwardedRequest.js';
 import type { AgentRequestReceipt } from '../../shared/forwardedRequest.js';
 import { configureBotTodoDispatch, settleBotTodoForSession } from './botTodoAccess.js';
@@ -531,7 +535,6 @@ import {
 } from './cindyAutoRouteFollow.js';
 import { readEffectiveBotModelChain, readEffectiveBotModelSelection } from '../maker-host/bot-model-chain-settings-store.js';
 import {
-  isOrcaWorkerPermissionMode,
   type OrcaWorkerPermissionMode,
 } from '../../shared/orca-worker-permission-mode.js';
 import { t } from '../i18n.js';
@@ -963,7 +966,6 @@ import {
   agentDeviceCatalogFailure,
   createOrcaWorkerCreationService,
   normalizeOrcaWorkerLabel,
-  pickWorkerAgentDeviceId,
 } from './orcaWorkerCreationService.js';
 import {
   resolveSendToSessionExecutionConfig,
@@ -2708,6 +2710,7 @@ interface EnableOrcaOptions {
   workingDir?: string;
   /** 首个 Worker 的 Agent 所在位置(远程供应商)；语义见 OrcaWorkerCreateParams.agentDeviceId。 */
   agentDeviceId?: string | null;
+  worktree?: WorkerWorktreeRequest;
 }
 
 let orcaCollabServiceHolder: OrcaCollabService | null = null;
@@ -10648,9 +10651,10 @@ export function registerMakerIpc(maker: Maker, options: RegisterMakerIpcOptions)
       ...(opts.executionDeviceId
         ? {
             executionDeviceId: opts.executionDeviceId,
-            ...(opts.workingDir ? { workingDir: opts.workingDir } : {}),
           }
         : {}),
+      ...(opts.workingDir !== undefined ? { workingDir: opts.workingDir } : {}),
+      ...(opts.worktree ? { worktree: opts.worktree } : {}),
       ...(opts.agentDeviceId !== undefined ? { agentDeviceId: opts.agentDeviceId } : {}),
     });
     if (!result.ok) throwOrcaServiceFailure(result);
@@ -13808,67 +13812,29 @@ export function registerMakerIpc(maker: Maker, options: RegisterMakerIpcOptions)
     getCoordinator: () => inputCoordinator,
   });
 
-  ipcMain.handle(
-    MAKER_INVOKE.SESSION_ENABLE_ORCA,
-    async (_e, leadSessionId: unknown, opts: unknown) => {
-      if (typeof leadSessionId !== 'string')
-        throwIpcError('INVALID_PARAMS', 'leadSessionId required');
-      const body = (opts ?? {}) as {
-        workerAgent?: unknown;
-        delegateTask?: unknown;
-        role?: unknown;
-        label?: unknown;
-        model?: unknown;
-        effort?: unknown;
-        fast?: unknown;
-        providerId?: unknown;
-        workerPermissionMode?: unknown;
-        deferDelegateTask?: unknown;
-        executionDeviceId?: unknown;
-        workingDir?: unknown;
-        agentDeviceId?: unknown;
-      };
-      const workerAgent: AgentKind =
-        body.workerAgent === 'codex' ? 'codex' : body.workerAgent === 'pi' ? 'pi' : 'claude-code';
-      const delegateTask = typeof body.delegateTask === 'string' ? body.delegateTask : undefined;
-      if (
-        body.workerPermissionMode !== undefined &&
-        !isOrcaWorkerPermissionMode(body.workerPermissionMode)
-      ) {
-        throwIpcError('INVALID_PARAMS', 'workerPermissionMode must be auto or bypassPermissions');
-      }
-      if (body.deferDelegateTask !== undefined && typeof body.deferDelegateTask !== 'boolean') {
-        throwIpcError('INVALID_PARAMS', 'deferDelegateTask must be a boolean');
-      }
-      return enableOrcaInternal(leadSessionId, {
-        workerAgent,
-        delegateTask,
-        role: typeof body.role === 'string' ? body.role : undefined,
-        label: typeof body.label === 'string' ? body.label : undefined,
-        model: typeof body.model === 'string' ? body.model : undefined,
-        effort: typeof body.effort === 'string' ? (body.effort as OrcaWorkerEffort) : undefined,
-        fast: typeof body.fast === 'boolean' ? body.fast : undefined,
-        // 只认非空(trim 后)string 为显式来源;其余(null/空白/缺省/异型)一律按「未显式」处理。
-        providerId:
-          typeof body.providerId === 'string' && body.providerId.trim().length > 0
-            ? body.providerId.trim()
-            : undefined,
-        workerPermissionMode: body.workerPermissionMode,
-        deferDelegateTask: body.deferDelegateTask,
-        // 运行设备与那台上的目录(可选)；旧控制端不带，行为不变。
-        ...(typeof body.executionDeviceId === 'string' && body.executionDeviceId.trim()
-          ? {
-              executionDeviceId: body.executionDeviceId.trim(),
-              ...(typeof body.workingDir === 'string' && body.workingDir.trim()
-                ? { workingDir: body.workingDir.trim() }
-                : {}),
-            }
-          : {}),
-        // 首个 Worker 的 Agent 所在位置(远程供应商)；旧控制端不带 = 跟 Lead。
-        ...pickWorkerAgentDeviceId(body.agentDeviceId),
-      });
+  const workerProjectHandlers = createOrcaWorkerProjectHandlers({
+    isDeviceLinkInvoke,
+    assertTrustedAppRendererEvent,
+    getOwner: getCurrentDbClientSnapshot,
+    getSession: async (owner, id) => {
+      const [session] = await owner.client.drizzle
+        .select()
+        .from(sessions)
+        .where(eq(sessions.id, id))
+        .limit(1);
+      return session;
     },
-  );
+    getTeamByWorkerSession,
+    readContext: readWorkerProjectContext,
+    probe: probeWorkerProject,
+    remember: rememberWorkerProject,
+    assertLeadCollabProjectEnabled,
+    createWorker: (params) => orcaLifecycleService.createWorker(params),
+    enableTeam: ({ leadSessionId, ...options }) => enableOrcaInternal(leadSessionId, options),
+    log,
+  });
+
+  ipcMain.handle(MAKER_INVOKE.SESSION_ENABLE_ORCA, workerProjectHandlers.enable);
 
   ipcMain.handle(
     MAKER_INVOKE.WORKER_DISPATCH_UI_ASSIGNMENT,
@@ -14085,69 +14051,13 @@ export function registerMakerIpc(maker: Maker, options: RegisterMakerIpcOptions)
     return disableOrcaInternal(leadSessionId);
   });
 
+  // Local-only reads: intentionally absent from the device-link allowlist.
+  ipcMain.handle('maker:worker:project-context', workerProjectHandlers.context);
+  ipcMain.handle('maker:worker:project-label', workerProjectHandlers.label);
+
   // ─── Orca worker IPC handlers ────────────────────────────────────────────
 
-  ipcMain.handle(MAKER_INVOKE.WORKER_CREATE, async (_e, body: unknown) => {
-    const b = body as Record<string, unknown> | null | undefined;
-    if (!b || typeof b.leadSessionId !== 'string')
-      throwIpcError('INVALID_PARAMS', 'leadSessionId required');
-    if (typeof b.role !== 'string' || b.role.length < 1 || b.role.length > 32)
-      throwIpcError('INVALID_PARAMS', 'role must be 1-32 chars');
-    if (typeof b.label !== 'string') throwIpcError('INVALID_PARAMS', 'label required');
-    const label = normalizeOrcaWorkerLabel(b.label);
-    if (!label.ok) throwIpcError('INVALID_PARAMS', label.message);
-    const agent =
-      b.agent === 'codex'
-        ? ('codex' as const)
-        : b.agent === 'pi'
-          ? ('pi' as const)
-          : ('claude-code' as const);
-    const model = typeof b.model === 'string' && b.model.length > 0 ? b.model : undefined;
-    if (
-      b.workerPermissionMode !== undefined &&
-      !isOrcaWorkerPermissionMode(b.workerPermissionMode)
-    ) {
-      throwIpcError('INVALID_PARAMS', 'workerPermissionMode must be auto or bypassPermissions');
-    }
-    await assertLeadCollabProjectEnabled(b.leadSessionId);
-    const result = await orcaLifecycleService.createWorker({
-      leadSessionId: b.leadSessionId,
-      role: b.role,
-      agent,
-      model,
-      effort: typeof b.effort === 'string' ? (b.effort as OrcaWorkerEffort) : undefined,
-      fast: typeof b.fast === 'boolean' ? b.fast : undefined,
-      // 只认非空(trim 后)string 为显式来源;其余(null/空白/缺省/异型)一律按「未显式」处理。
-      providerId:
-        typeof b.providerId === 'string' && b.providerId.trim().length > 0
-          ? b.providerId.trim()
-          : undefined,
-      workerPermissionMode: b.workerPermissionMode,
-      label: label.value,
-      initialTask:
-        typeof b.initialTask === 'string' && b.initialTask.length > 0 ? b.initialTask : undefined,
-      // 运行设备与那台上的目录(可选)；旧控制端不带，行为不变。
-      ...(typeof b.executionDeviceId === 'string' && b.executionDeviceId.trim()
-        ? {
-            executionDeviceId: b.executionDeviceId.trim(),
-            ...(typeof b.workingDir === 'string' && b.workingDir.trim()
-              ? { workingDir: b.workingDir.trim() }
-              : {}),
-          }
-        : {}),
-      // Worker 的 Agent 所在位置(远程供应商)；旧控制端不带 = 跟 Lead。
-      ...pickWorkerAgentDeviceId(b.agentDeviceId),
-    });
-    if (!result.ok) throwOrcaServiceFailure(result);
-    return {
-      ok: true,
-      workerId: result.workerId,
-      workerSessionId: result.workerSessionId,
-      softLimitExceeded: result.softLimitExceeded,
-      ...(result.dispatched !== undefined ? { dispatched: result.dispatched } : {}),
-      ...(result.dispatchOutcome ? { dispatchOutcome: result.dispatchOutcome } : {}),
-    };
-  });
+  ipcMain.handle(MAKER_INVOKE.WORKER_CREATE, workerProjectHandlers.create);
 
   ipcMain.handle(MAKER_INVOKE.WORKER_LIST, async (_e, leadSessionId: unknown) => {
     if (typeof leadSessionId !== 'string')
@@ -14584,6 +14494,31 @@ export function registerMakerIpc(maker: Maker, options: RegisterMakerIpcOptions)
     return { permissionMode: pluginId === null ? undefined : 'auto' as const, assertCurrent };
   };
 
+  async function discardWorkerWorktree(sessionId: string): Promise<void> {
+    await withSendToSessionLock(sessionId, async () => {
+      await worktreeManager.awaitBackgroundCheckout(sessionId);
+      const meta = worktreeManager.getForSession(sessionId);
+      const result = await worktreeManager.cancelPrecreatedWorktree(
+        sessionId,
+        { path: meta?.path },
+        {
+          canRemove: async () => {
+            if (maker.getSession(sessionId)) return false;
+            const [row] = await getDbClient()
+              .drizzle.select({ status: sessions.status })
+              .from(sessions)
+              .where(eq(sessions.id, sessionId))
+              .limit(1);
+            return !row || row.status === 'archived';
+          },
+        },
+      );
+      if (result.status === 'preserved' || result.status === 'path-mismatch') {
+        log.warn('Failed Worker worktree was preserved', { sessionId, status: result.status });
+      }
+    });
+  }
+
   const orcaWorkerCreationService = createOrcaWorkerCreationService({
     withLeadSendLock: withSendToSessionLock,
     getActiveTeamByLead,
@@ -14694,6 +14629,8 @@ export function registerMakerIpc(maker: Maker, options: RegisterMakerIpcOptions)
       );
       return resolved;
     },
+    createWorkerWorktree,
+    discardWorkerWorktree,
     getAvailableModels: (agent) => maker.getCapabilities(agent).availableModels,
     getProviderRoutingContext: async (agent, remoteHostId, agentDeviceId) => agentDeviceId && !remoteHostId
       // Worker 的 Agent 在另一台电脑(或分享)运行：模型与来源按那台的目录。
@@ -14832,7 +14769,11 @@ export function registerMakerIpc(maker: Maker, options: RegisterMakerIpcOptions)
       }
       forgetKnownOrcaWorkerSession(workerSessionId);
       await archiveSingleWorkerSession(workerSessionId).catch(() => undefined);
-      await removeWorker(workerId);
+      try {
+        await removeWorker(workerId);
+      } finally {
+        if (worktreeManager.getForSession(workerSessionId)) await discardWorkerWorktree(workerSessionId);
+      }
     },
     broadcastSessionCreated,
     broadcastOrcaWorkerChanged: (leadSessionId) => {

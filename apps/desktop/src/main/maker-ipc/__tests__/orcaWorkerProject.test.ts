@@ -1,0 +1,471 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { realpath, stat } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { gitExec } from '../../worktree/gitExec';
+import { MAKER_INVOKE } from '../channels';
+import { isDeviceLinkInvoke, runDeviceLinkInvokeContext } from '../../device-link/invoke-context';
+import { probeWorkerProject, readWorkerProjectContext } from '../orcaWorkerProject';
+import { createOrcaWorkerProjectHandlers } from '../orcaWorkerProjectHandlers';
+
+vi.mock('../../maker-host/codex-credential-switch', () => ({
+  isCredentialModeSwitchBusyError: () => false,
+}));
+vi.mock('../../device-link/subscriptions', () => ({}));
+
+vi.mock('electron', () => ({ app: {} }));
+vi.mock('../../logger', () => ({ createLogger: () => ({}) }));
+vi.mock('../../maker-host/override-settings-file', () => ({
+  createOverrideSettingsFile: () => ({}),
+}));
+vi.mock('../../localDb/client/current', () => ({}));
+vi.mock('../../localDb/ipc/recentWorkdirs', () => ({}));
+vi.mock('../../git-context/sessionDirResolver', () => ({}));
+vi.mock('../../worktree/WorktreeManager', () => ({}));
+// Keep the production probe and Git output real; isolate unrelated process/runtime services.
+vi.mock('../../worktree/gitExec', () => ({
+  gitExec: vi.fn(async (args: string[], cwd: string) => ({
+    stdout: execFileSync('git', args, { cwd, encoding: 'utf8' }),
+    stderr: '',
+  })),
+}));
+
+const directory = mkdtempSync(path.join(os.tmpdir(), 'cindy-worker-head-'));
+afterAll(() => rmSync(directory, { recursive: true, force: true }));
+
+// N07/N09: existing inheritance tests inject probes and miss actual Git HEAD states.
+// Integration tier: an empty repo, its first commit, then detached HEAD are the smallest
+// inputs proving availability and that the selected revision remains the full commit ID.
+describe('Worker project HEAD probe', () => {
+  it('distinguishes an unborn HEAD, a branch and a detached commit while retaining dirty status', async () => {
+    const git = (...args: string[]) =>
+      execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
+    git('init', '--initial-branch=main');
+    writeFileSync(path.join(directory, 'file.txt'), 'worker\n');
+    expect(await probeWorkerProject(directory)).toMatchObject({
+      exists: true,
+      headState: 'unborn',
+      branch: null,
+      dirty: true,
+    });
+    git('add', 'file.txt');
+    git(
+      '-c',
+      'user.name=Fixture',
+      '-c',
+      'user.email=fixture@example.invalid',
+      '-c',
+      'commit.gpgsign=false',
+      'commit',
+      '-m',
+      'fixture',
+    );
+    expect(await probeWorkerProject(directory)).toMatchObject({
+      headState: 'branch',
+      branch: 'main',
+      dirty: false,
+    });
+    const sha = git('rev-parse', 'HEAD');
+    git('checkout', '--detach', '--quiet', sha);
+    expect(await probeWorkerProject(directory)).toMatchObject({
+      headState: 'detached',
+      branch: sha,
+      dirty: false,
+    });
+  });
+});
+
+// Unit: import the same IPC adapter used by register.ts and use real device-link identity.
+// PR1 requires local project options to stay local; service tests bypass this boundary.
+// One new local field is enough to reject a remote request before any lifecycle mutation.
+const projectChannels = ['maker:worker:project-context', 'maker:worker:project-label'];
+const creationChannels = [MAKER_INVOKE.WORKER_CREATE, MAKER_INVOKE.SESSION_ENABLE_ORCA];
+type Handler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
+function ipcHarness(ssh = false) {
+  const createWorker = vi.fn(async (_params: unknown) => ({
+    ok: true as const,
+    teamId: 'team',
+    resolved: {
+      agent: 'codex' as const,
+      model: 'model',
+      effort: null,
+      fastMode: false,
+      providerId: null,
+      role: 'developer',
+      label: 'developer',
+    },
+    workerId: 'worker',
+    workerSessionId: 'worker-session',
+  }));
+  const enableTeam = vi.fn(async (_params: unknown) => ({
+    teamId: 'team',
+    workerId: 'worker',
+    workerSessionId: 'worker-session',
+  }));
+  const lead = {
+    id: 'lead',
+    remoteHostId: ssh ? 'ssh-host' : null,
+    workingDir: '/repo',
+    workspaceKind: 'project',
+    orcaRole: 'lead',
+  };
+  const worker = { ...lead, id: 'worker-session', orcaRole: 'worker' };
+  const getSession = vi.fn(async () => lead);
+  const owner = { userId: 'owner' };
+  const info = {
+    directory: '/repo',
+    baseRepo: '/repo',
+    branch: 'main',
+    exists: true,
+    dirty: false,
+    isWorktree: false,
+  };
+  const readContext = vi.fn(async () => ({
+    recordedDirectory: '/repo',
+    inherited: info,
+    selected: info,
+    dialogue: false,
+    projects: [],
+  }));
+  const probe = vi.fn(async () => info);
+  const remember = vi.fn(async () => {});
+  const trustedRenderer = vi.fn();
+  const adapters = createOrcaWorkerProjectHandlers({
+    isDeviceLinkInvoke,
+    assertTrustedAppRendererEvent: trustedRenderer,
+    getOwner: () => owner,
+    getSession,
+    readContext,
+    probe,
+    remember,
+    getTeamByWorkerSession: async () => ({ leadSessionId: 'lead' }),
+    assertLeadCollabProjectEnabled: vi.fn(async () => {}),
+    createWorker,
+    enableTeam,
+    log: { warn: vi.fn() },
+  });
+  const handlers = new Map<string, Handler>([
+    [MAKER_INVOKE.WORKER_CREATE, (event, body) => adapters.create(event, body)],
+    [MAKER_INVOKE.SESSION_ENABLE_ORCA, (event, id, opts) => adapters.enable(event, id, opts)],
+    [projectChannels[0]!, (event, id, directory) => adapters.context(event, id, directory)],
+    [projectChannels[1]!, (event, id) => adapters.label(event, id)],
+  ]);
+  const invoke = (channel: string, args: unknown[], remote = true) => {
+    const handler = handlers.get(channel)!;
+    const call = () => handler({}, ...args);
+    return remote
+      ? runDeviceLinkInvokeContext({ controllerDeviceId: 'controller', channel }, call)
+      : call();
+  };
+  return {
+    invoke,
+    createWorker,
+    enableTeam,
+    getSession,
+    readContext,
+    probe,
+    remember,
+    trustedRenderer,
+    lead,
+    worker,
+  };
+}
+
+// Released pre-project-picker clients: mobile formWireFields with default placement or an
+// execution device + selected directory, and Desktop's executionDeviceId + workingDir.
+// These are protocol samples, deliberately independent of current client serializers:
+// breaking them would reject old clients or create their Worker in the wrong directory.
+const legacyWireFields = {
+  'mobile-default': { workerPermissionMode: 'auto' },
+  'mobile-execution-dir': {
+    model: 'chosen-model',
+    effort: 'high',
+    fast: false,
+    providerId: 'provider',
+    workerPermissionMode: 'auto',
+    executionDeviceId: 'execution-pc',
+    workingDir: '/remote/project',
+  },
+  'desktop-execution-dir': { executionDeviceId: ' execution-pc ', workingDir: ' /remote/project ' },
+};
+const createBody = { leadSessionId: 'lead', role: 'developer', label: 'developer', agent: 'codex' };
+const argsFor = (channel: string, fields: Record<string, unknown>) =>
+  channel === MAKER_INVOKE.WORKER_CREATE
+    ? [{ ...createBody, ...fields }]
+    : ['lead', { workerAgent: 'codex', role: 'developer', label: 'developer', ...fields }];
+
+describe('Worker project IPC cross-device boundary', () => {
+  it.each(
+    creationChannels.flatMap((channel) =>
+      ['worktree', 'projectPath', 'workingDir'].flatMap((field) =>
+        (field === 'workingDir' ? [false] : [false, true]).map((execution) => ({
+          channel,
+          field,
+          execution,
+        })),
+      ),
+    ),
+  )(
+    'rejects device-link $channel with local $field before creation (execution=$execution)',
+    async ({ channel, field, execution }) => {
+      const h = ipcHarness();
+      const value = field === 'worktree' ? { sourceBranch: 'main' } : path.resolve('local-project');
+      await expect(
+        h.invoke(
+          channel,
+          argsFor(channel, {
+            [field]: value,
+            ...(execution ? { executionDeviceId: 'execution-pc' } : {}),
+          }),
+        ),
+      ).rejects.toMatchObject({ code: 'PERMISSION_DENIED' });
+      expect(h.createWorker).not.toHaveBeenCalled();
+      expect(h.enableTeam).not.toHaveBeenCalled();
+      expect(h.readContext).not.toHaveBeenCalled();
+      expect(h.probe).not.toHaveBeenCalled();
+      expect(h.remember).not.toHaveBeenCalled();
+    },
+  );
+  it.each(creationChannels)(
+    'rejects SSH project creation through %s before lifecycle',
+    async (channel) => {
+      const h = ipcHarness(true);
+      await expect(
+        h.invoke(channel, argsFor(channel, { worktree: { sourceBranch: 'main' } }), false),
+      ).rejects.toMatchObject({ code: 'INVALID_PARAMS' });
+      expect(h.createWorker).not.toHaveBeenCalled();
+      expect(h.enableTeam).not.toHaveBeenCalled();
+      expect(h.remember).not.toHaveBeenCalled();
+    },
+  );
+  // PR1's new local fields must reach creation, while project history is success-only.
+  // Legacy wire cases cannot catch accidentally dropping the new local placement fields.
+  it.each(
+    creationChannels.flatMap((channel) => [false, true].map((fails) => ({ channel, fails }))),
+  )(
+    'forwards local project fields and records only successful creation: $channel fails=$fails',
+    async ({ channel, fails }) => {
+      const h = ipcHarness();
+      const downstream = channel === MAKER_INVOKE.WORKER_CREATE ? h.createWorker : h.enableTeam;
+      if (fails) downstream.mockRejectedValueOnce(new Error('creation failed'));
+      const directory = path.resolve('selected-project');
+      const worktree = { sourceBranch: 'feature' };
+      const pending = h.invoke(
+        channel,
+        argsFor(channel, { workingDir: directory, worktree, projectPath: directory }),
+        false,
+      );
+      if (fails) await expect(pending).rejects.toThrow('creation failed');
+      else await expect(pending).resolves.toMatchObject({ workerSessionId: 'worker-session' });
+      expect(downstream).toHaveBeenCalledWith(
+        expect.objectContaining({ workingDir: directory, worktree }),
+      );
+      expect(downstream.mock.calls[0]![0]).not.toHaveProperty('projectPath');
+      if (fails) expect(h.remember).not.toHaveBeenCalled();
+      else expect(h.remember).toHaveBeenCalledExactlyOnceWith(directory, 'owner');
+    },
+  );
+  it.each(projectChannels.flatMap((channel) => [false, true].map((ssh) => ({ channel, ssh }))))(
+    'denies project reads $channel (SSH=$ssh)',
+    async ({ channel, ssh }) => {
+      const h = ipcHarness(ssh);
+      await expect(
+        h.invoke(channel, [channel.endsWith('label') ? 'worker-session' : 'lead'], !ssh),
+      ).rejects.toMatchObject({ code: ssh ? 'INVALID_PARAMS' : 'PERMISSION_DENIED' });
+      expect(h.readContext).not.toHaveBeenCalled();
+      expect(h.probe).not.toHaveBeenCalled();
+    },
+  );
+  it('rejects a local worker project label when its Lead is SSH', async () => {
+    const h = ipcHarness(true);
+    h.getSession.mockResolvedValueOnce({ ...h.worker, remoteHostId: null });
+    await expect(h.invoke(projectChannels[1]!, ['worker-session'], false)).rejects.toMatchObject({
+      code: 'INVALID_PARAMS',
+    });
+    expect(h.probe).not.toHaveBeenCalled();
+  });
+  it.each(
+    creationChannels.flatMap((channel) =>
+      ['mobile-default', 'mobile-execution-dir', 'desktop-execution-dir'].map((client) => ({
+        channel,
+        client,
+      })),
+    ),
+  )('preserves legacy fields for $client through $channel', async ({ channel, client }) => {
+    const h = ipcHarness();
+    const execution = client !== 'mobile-default';
+    const fields = legacyWireFields[client as keyof typeof legacyWireFields];
+    await expect(h.invoke(channel, argsFor(channel, fields))).resolves.toMatchObject({
+      workerSessionId: 'worker-session',
+    });
+    const expected = {
+      leadSessionId: 'lead',
+      role: 'developer',
+      label: 'developer',
+      model: client === 'mobile-execution-dir' ? 'chosen-model' : undefined,
+      effort: client === 'mobile-execution-dir' ? 'high' : undefined,
+      fast: client === 'mobile-execution-dir' ? false : undefined,
+      providerId: client === 'mobile-execution-dir' ? 'provider' : undefined,
+      workerPermissionMode: client.startsWith('mobile') ? 'auto' : undefined,
+      ...(execution ? { executionDeviceId: 'execution-pc', workingDir: '/remote/project' } : {}),
+      ...(channel === MAKER_INVOKE.WORKER_CREATE
+        ? { agent: 'codex', initialTask: undefined }
+        : { workerAgent: 'codex', delegateTask: undefined, deferDelegateTask: undefined }),
+    };
+    const downstream = channel === MAKER_INVOKE.WORKER_CREATE ? h.createWorker : h.enableTeam;
+    expect(downstream).toHaveBeenCalledExactlyOnceWith(expected);
+    expect(h.trustedRenderer).not.toHaveBeenCalled();
+    expect(h.getSession).not.toHaveBeenCalled();
+    expect(h.remember).not.toHaveBeenCalled();
+  });
+});
+
+// Performance regression, unit: recent lists can contain hundreds of projects. Existing
+// HEAD/creation tests do not limit list-time Git work or selection-time list reloads.
+describe('Worker project read cost', () => {
+  it('builds 100 recent rows with bounded stat work and no Git, retaining order and current-worktree deduplication', async () => {
+    const inherited = {
+      directory: '/repo/.cindy-worktrees/lead',
+      baseRepo: '/repo',
+      branch: 'feature',
+      exists: true,
+      dirty: false,
+      isWorktree: true,
+      checkoutRoot: '/repo/.cindy-worktrees/lead',
+      commonDir: '/repo/.git',
+      realDirectory: '/repo/.cindy-worktrees/lead',
+    };
+    const inherit = vi.fn(async () => inherited);
+    const recent = Array.from({ length: 100 }, (_, index) => `/projects/project-${index}`);
+    let active = 0;
+    let peak = 0;
+    const isDirectory = vi.fn(async (directory: string) => {
+      active++;
+      peak = Math.max(peak, active);
+      await Promise.resolve();
+      active--;
+      return directory !== recent[99];
+    });
+    vi.mocked(gitExec).mockClear();
+    const result = await readWorkerProjectContext(
+      { id: 'lead', workingDir: inherited.directory },
+      {
+        inherit,
+        // Worker history precedes global recents; normalized aliases must not add rows.
+        recentDirectories: async () => [
+          recent[42]!,
+          '/repo/.',
+          inherited.directory,
+          ...recent,
+          `${recent[42]}/.`,
+        ],
+        isDirectory,
+        realpath: async (directory) => {
+          active++;
+          peak = Math.max(peak, active);
+          await Promise.resolve();
+          active--;
+          return directory;
+        },
+      },
+    );
+    expect(inherit).toHaveBeenCalledTimes(1);
+    expect(gitExec).not.toHaveBeenCalled();
+    expect(isDirectory).toHaveBeenCalledTimes(101);
+    expect(peak).toBeLessThanOrEqual(4);
+    expect(result.projects.map((row) => row.path)).toEqual([
+      '/repo',
+      recent[42],
+      ...recent.filter((value) => value !== recent[42]),
+    ]);
+    expect(result.projects.at(-1)).toMatchObject({ path: recent[99], missing: true });
+    expect(result.selected).toBe(inherited);
+  });
+
+  it('switches a project with exactly one target probe and no list or Lead inheritance reload', async () => {
+    const h = ipcHarness();
+    const selected = {
+      directory: '/other',
+      baseRepo: '/other',
+      branch: 'other',
+      exists: true,
+      dirty: true,
+      isWorktree: false,
+    };
+    h.probe.mockResolvedValue(selected);
+    await h.invoke(projectChannels[0]!, ['lead'], false);
+    const initialReads = h.readContext.mock.calls.length;
+    expect(await h.invoke(projectChannels[0]!, ['lead', '/other'], false)).toEqual(selected);
+    expect(h.readContext).toHaveBeenCalledTimes(initialReads);
+    expect(h.probe).toHaveBeenCalledExactlyOnceWith('/other', true);
+  });
+});
+
+// P2 regression: lexical path normalization misses filesystem aliases (/var vs /private/var,
+// or a user-created symlink). Real filesystem identities must merge rows without invoking Git
+// or rewriting the selected path. Unit tier: tiny temp directories, no timers or Git processes.
+describe('Worker project filesystem aliases', () => {
+  const base = path.join(directory, 'alias-fixture');
+  const linked = path.join(directory, 'linked-projects');
+  const projectA = path.join(base, 'proj-a');
+  const checkout = path.join(projectA, '.cindy-worktrees', 'worker');
+  const projectB = path.join(base, 'proj-b');
+  const projectC = path.join(base, 'proj-c');
+  const aliasB = path.join(linked, 'proj-b');
+  const missing = path.join(linked, 'missing');
+  // The parent fixture's afterAll removes both the target and its link.
+  beforeAll(() => {
+    mkdirSync(checkout, { recursive: true });
+    mkdirSync(projectB, { recursive: true });
+    mkdirSync(projectC, { recursive: true });
+    symlinkSync(base, linked, 'junction');
+  });
+
+  it('merges current checkout/base aliases and ordinary project aliases, preserving the first path and failed-realpath rows', async () => {
+    const canonicalA = await realpath(projectA);
+    const canonicalCheckout = await realpath(checkout);
+    const inherited = {
+      directory: canonicalCheckout,
+      baseRepo: canonicalA,
+      checkoutRoot: canonicalCheckout,
+      realDirectory: canonicalCheckout,
+      commonDir: path.join(canonicalA, '.git'),
+      branch: 'feature',
+      exists: true,
+      dirty: false,
+      isWorktree: true,
+    };
+    vi.mocked(gitExec).mockClear();
+    const result = await readWorkerProjectContext(
+      { id: 'lead', workingDir: canonicalCheckout, worktreePath: checkout },
+      {
+        inherit: async () => inherited,
+        recentDirectories: async () => [
+          path.join(linked, 'proj-a'),
+          projectA,
+          path.join(linked, 'proj-a/.cindy-worktrees/worker'),
+          // Worker history can retain both spellings; the list must show one row.
+          aliasB,
+          projectB,
+          missing,
+          projectC,
+        ],
+        realpath,
+        isDirectory: async (directory) => {
+          try {
+            return (await stat(directory)).isDirectory();
+          } catch {
+            return false;
+          }
+        },
+      },
+    );
+    expect(result.projects.map((row) => row.path)).toEqual([canonicalA, aliasB, missing, projectC]);
+    expect(result.projects[1]).toMatchObject({ path: aliasB, description: aliasB, missing: false });
+    expect(result.projects[2]).toMatchObject({ path: missing, missing: true });
+    expect(result.projects[3]).toMatchObject({ missing: false });
+    expect(gitExec).not.toHaveBeenCalled();
+  });
+});
