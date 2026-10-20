@@ -14987,13 +14987,16 @@ assertRouteCurrent();
       note: 'Codex 精确 fork: 独立一次性 host 上 thread/fork 后按需 thread/rollback 新 thread 尾部 turn',
     });
     try {
-      const forkStorage = await this.deps.resolveCodexThreadStorage?.(opts.sourceSdkSessionId);
+      const guestCodexHome = opts.hostedGuestHome ? path.join(opts.hostedGuestHome, 'codex') : undefined;
+      const forkStorage = guestCodexHome
+        ? { historyHome: guestCodexHome, sqliteHome: guestCodexHome }
+        : await this.deps.resolveCodexThreadStorage?.(opts.sourceSdkSessionId);
       // Fork requires actual history; it must never use resume's unused-thread recovery.
       if (forkStorage?.rolloutPath && !(await fs.lstat(forkStorage.rolloutPath)).isFile()) {
         throw new CodexResumePreparationBlockedError('Codex fork history is unavailable');
       }
       // Source history inspection must not depend on the credentials we are leaving.
-      let preparedSourcePath = opts.stripEncryptedReasoning
+      let preparedSourcePath = opts.stripEncryptedReasoning && !guestCodexHome
         ? await this.deps.prepareCodexResumeSession?.(opts.sourceSdkSessionId)
         : undefined;
       let historyChecked = false;
@@ -15018,6 +15021,7 @@ assertRouteCurrent();
               ...(forkAccountId ? { providerId: forkAccountId } : {}),
               ...(forkSqliteHome ? { sqliteHome: forkSqliteHome } : {}),
               ...(forkStorage ? { historyHome: forkStorage.historyHome } : {}),
+              ...(guestCodexHome && opts.providerId ? { deviceHostedGuestProviderId: opts.providerId } : {}),
               routeIsCurrent: selection.isCurrent,
               routeSignal: forkRouteSignal,
               ...(selection.policy === 'isolated' ? { localAuthPolicy: selection.policy } : {}),
@@ -15040,7 +15044,7 @@ assertRouteCurrent();
             // fork app-server cannot resolve a freshly imported thread.
             // A first host may have just created the managed state DB needed for imports.
             stage = 'source-prepare';
-            preparedSourcePath ??= await this.deps.prepareCodexResumeSession?.(opts.sourceSdkSessionId);
+            if (!guestCodexHome) preparedSourcePath ??= await this.deps.prepareCodexResumeSession?.(opts.sourceSdkSessionId);
             if (opts.stripEncryptedReasoning && !historyChecked) {
               // Check before allocating a child: indexed native history must go through
               // Cindy's handoff recovery, never a file rewrite that invalidates Codex's DB.

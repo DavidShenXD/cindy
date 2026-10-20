@@ -15,6 +15,9 @@ import { CodexResumePreparationBlockedError, isCodexHistoryRecoveryRequired } fr
 import { CODEX_RESUME_NOT_READY_WIRE_MESSAGE } from '@cindy/maker-shared/agent-input-projection';
 
 import { assertCindyMakeSessionAvailable } from '../cindy-make/featureGate.js';
+import { remoteBackgroundInvoke } from '../device-link/index.js';
+import { forkRemoteAgentSession } from '../remote-agent/controller/fork.js';
+import { remoteAgentInvoker } from '../remote-agent/controller/runClient.js';
 import { getDbClient } from '../localDb/client/current';
 import { sessions, messages } from '../localDb/schema';
 import { sessionToCamel } from '../localDb/mapper';
@@ -831,10 +834,6 @@ export async function forkSessionAtMessage(
   if (source.remoteHostId) {
     throw forkError('REMOTE_NOT_SUPPORTED', '远端会话暂不支持在本地 fork');
   }
-  // Agent 在另一台电脑运行的任务：Agent 会话记录在那台，本机无法从中分叉。
-  if (source.agentDeviceId) {
-    throw forkError('REMOTE_NOT_SUPPORTED', '这个任务的 Agent 在另一台电脑运行，暂不支持分叉');
-  }
 
   // 2. 读 target message + rowid —— 同毫秒边界必须按真实插入顺序判断。
   const [target] = await db
@@ -938,7 +937,7 @@ export async function forkSessionAtMessage(
     forkSource.agentKind,
   );
   if (!usesTailTurnFork && forkSource.sdkSessionId) {
-    claudeAnchorIndex = await loadClaudeTranscriptAnchorIndex({
+    claudeAnchorIndex = source.agentDeviceId ? null : await loadClaudeTranscriptAnchorIndex({
       sdkSessionId: forkSource.sdkSessionId,
       workingDir: source.workingDir,
     }).catch(() => null);
@@ -969,6 +968,7 @@ export async function forkSessionAtMessage(
   // 4. 调 SDK forkSession (事务外)。fresh Claude 首条 user 特例没有合法的 prior
   // assistant 锚点：保留 pending handoff、让新会话首次发送时 lazy-create 即可。
   const newTitle = source.title.startsWith('[Fork') ? source.title : `[Fork] ${source.title}`;
+  const newSessionId = createBusinessSessionId();
   let newSdkSessionId: string | null = null;
   let uuidMap = new Map<string, string>();
   let initialContextTokens: number | undefined;
@@ -982,25 +982,38 @@ export async function forkSessionAtMessage(
     (usesTailTurnFork || assistantUuid)
   ) {
     const agentKind = dbToMakerAgentKind(forkSource.agentKind);
-    const forkResult = await getMaker()
-      .forkSdkSession(agentKind, {
-        sourceSdkSessionId: forkSource.sdkSessionId,
-        ...(isCodex ? { model: forkSource.model, providerId: forkSource.providerId } : {}),
-        upToMessageId: assistantUuid,
-        ...(lastTurnId ? { lastTurnId } : {}),
-        ...(forkAtTimestampMs !== undefined ? { forkAtTimestampMs } : {}),
-        ...(tailTurnsToDrop !== undefined ? { tailTurnsToDrop } : {}),
-        title: newTitle,
-        workingDir: source.workingDir ?? undefined,
-        // Pi 的 fork 守卫判定源 session 是否远端(用 DB 的 remoteHostId, 不用
-        // agent 实例字段 —— R4 竞态 #1)。
-        remoteHostId: source.remoteHostId ?? null,
-      })
+    const forkOptions = {
+      sourceSdkSessionId: forkSource.sdkSessionId,
+      ...(isCodex ? { model: forkSource.model, providerId: forkSource.providerId } : {}),
+      upToMessageId: assistantUuid,
+      ...(lastTurnId ? { lastTurnId } : {}),
+      ...(forkAtTimestampMs !== undefined ? { forkAtTimestampMs } : {}),
+      ...(tailTurnsToDrop !== undefined ? { tailTurnsToDrop } : {}),
+      title: newTitle,
+      workingDir: source.workingDir ?? undefined,
+      // Pi 的 fork 守卫判定源 session 是否远端(用 DB 的 remoteHostId, 不用
+      // agent 实例字段 —— R4 竞态 #1)。
+      remoteHostId: source.remoteHostId ?? null,
+    };
+    const forkResult = await (source.agentDeviceId
+      ? forkRemoteAgentSession(remoteAgentInvoker(source.agentDeviceId, remoteBackgroundInvoke), {
+          sourceSdkSessionId: forkSource.sdkSessionId,
+          upToMessageId: assistantUuid,
+          lastTurnId,
+          tailTurnsToDrop,
+          forkAtTimestampMs,
+          sourceSessionId,
+          newSessionId,
+          agentKind,
+          model: forkSource.model,
+          providerId: forkSource.providerId,
+        })
+      : getMaker().forkSdkSession(agentKind, forkOptions))
       .catch((err: unknown) => {
         // 这里刻意用 isCodex(非 usesTailTurnFork):CODEX_FORK_STATE_UNAVAILABLE 是 codex 专属
         // 错误码 + 文案,只有真 codex 失败才包装。pi 与 cc 一样裸抛原始错误(不会拿到指名道姓
         // 错对象的 "Codex 状态不可用" 提示)。改成 usesTailTurnFork 会让 pi 误报成 codex 错误。
-        if (!isCodex) throw err;
+        if (!isCodex || source.agentDeviceId) throw err;
         if (isCodexHistoryRecoveryRequired(err) && (sourceMessages.length > 0 || target.role === 'user')) {
           // 首条 user 之前的空前缀也是合法 fork；其它错误不得变成丢上下文的新任务。
           needsHistoryRecovery = true;
@@ -1023,7 +1036,6 @@ export async function forkSessionAtMessage(
 
   // 5. SQLite 事务：insert 新 session + bulk copy messages
   const now = Date.now();
-  const newSessionId = createBusinessSessionId();
 
   const newMessageIds = sourceMessages.map(() => ({ id: createId(), clientId: createId() }));
   const recoveryMarker = needsHistoryRecovery ? buildCodexForkRecoveryMarker({
@@ -1074,6 +1086,7 @@ export async function forkSessionAtMessage(
         // 轮 26 HIGH-1:远端会话 fork 必须继承 remoteHostId —— 缺失会落成
         // NULL, 子会话被下游当成本地会话处理(本地 transport/MCP 全错)。
         remoteHostId: source.remoteHostId ?? null,
+        agentDeviceId: source.agentDeviceId ?? null,
         codexHistoryHasProductPrompt: source.codexHistoryHasProductPrompt,
         parentSessionId: source.id,
         forkedAtMessageId: messageClientId,

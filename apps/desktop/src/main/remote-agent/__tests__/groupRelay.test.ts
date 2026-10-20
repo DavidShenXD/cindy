@@ -64,6 +64,7 @@ function fakeAgentHost(name: string, started: Started[], options: {
   resolveProvider?: NonNullable<Parameters<typeof createRemoteAgentHost>[0]['providerAccess']>['resolve'];
 }) {
   return createRemoteAgentHost({
+    forkHosted: async (_kind, opts) => ({ newSdkSessionId: `${opts.sourceSdkSessionId}-fork`, uuidMap: new Map([['old', 'new']]) }),
     prepareImageEvent: options.prepareImageEvent,
     imageArtifacts: options.imageArtifacts,
     isAgentAvailable: () => true,
@@ -301,6 +302,25 @@ function switchTokenIn(stream: Awaited<ReturnType<typeof openAsGuest>>['stream']
 }
 
 describe('provider group relay for shared users', () => {
+  // Public G -> O -> M handlers, with JSON serialization: a fork must remain pinned
+  // to its original member and preserve the guest ownership needed for another fork.
+  it('forks and resumes on the original member without allocating another group member', async () => {
+    const env = setup();
+    const first = await openAsGuest(env, GUEST_A, openPayload(SESSION));
+    const request = { op: 'fork', sourceSessionId: SESSION, newSessionId: 'child-task',
+      agentKind: 'claude-code', sourceSdkSessionId: first.started.id, model: 'claude-opus', upToMessageId: 'old' };
+    await first.client.close('close', 'navigation');
+    const child = await env.owner.handle(GUEST_A, request) as { newSdkSessionId: string; uuidMap: unknown };
+    expect(child).toEqual({ newSdkSessionId: `${first.started.id}-fork`, uuidMap: [['old', 'new']] });
+    await expect(env.owner.handle(GUEST_B, request)).rejects.toThrow('REMOTE_AGENT_INVALID');
+    await expect(env.owner.handle(GUEST_A, { ...request, sourceSessionId: 'child-task',
+      newSessionId: 'grandchild-task', sourceSdkSessionId: child.newSdkSessionId }))
+      .resolves.toMatchObject({ newSdkSessionId: `${child.newSdkSessionId}-fork` });
+    const resumed = await openAsGuest(env, GUEST_A, openPayload('child-task', { options: { resumeSessionId: child.newSdkSessionId } }));
+    expect(env.memberStarted.mini[1].input.options.resumeSessionId).toBe(child.newSdkSessionId);
+    expect(env.relay.plan).toHaveBeenCalledTimes(1);
+    await resumed.client.close('close', 'navigation');
+  });
   it('hands a shared user’s new task to the chosen computer, which runs it isolated as a shared user', async () => {
     const env = setup();
     const { client, started } = await openAsGuest(env, GUEST_A, openPayload(SESSION));

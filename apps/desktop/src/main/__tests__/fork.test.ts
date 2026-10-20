@@ -50,6 +50,8 @@ vi.mock('../localDb/ipc/sessionCreatedBroadcast.js', () => ({
 }));
 
 const forkSdkSessionMock = vi.fn();
+const remoteInvokeMock = vi.fn();
+vi.mock('../device-link/index.js', () => ({ remoteBackgroundInvoke: (...args: unknown[]) => remoteInvokeMock(...args) }));
 vi.mock('../maker-host/index.js', () => ({
   getMaker: () => ({
     forkSdkSession: forkSdkSessionMock,
@@ -136,6 +138,7 @@ beforeEach(async () => {
   commitContextRebuildMock.mockClear();
   createMessageMock.mockClear();
   forkSdkSessionMock.mockReset();
+  remoteInvokeMock.mockReset();
   inferProviderIdForModelMock.mockReset();
   inferProviderIdForModelMock.mockReturnValue(null);
   // 默认空 uuidMap 让 agentMeta 字段被去掉 (无映射)。具体测试按需 override。
@@ -1158,14 +1161,37 @@ describe('forkSessionAtMessage', () => {
     expect(txArgs.newMessageIds).toHaveLength(2);
   });
 
-  it('refuses to fork a task whose agent runs on another computer (its agent record is there)', async () => {
-    selectQueue.push([makeSourceRow({ agentDeviceId: 'device-b' })]);
-
-    await expect(forkSessionAtMessage('src-session', 'any-msg')).rejects.toMatchObject({
-      code: 'REMOTE_NOT_SUPPORTED',
+  // Shared-model fork: the original bug rejected agentDeviceId before reading history.
+  // Unit coverage of the real orchestration + wire client; no live devices or model calls.
+  it.each(['ready', 'old-peer', 'timeout'])('forks on the provider device without a local fallback: %s', async (mode) => {
+    selectQueue.push([makeSourceRow({ agentDeviceId: 'device-b', providerId: 'shared-provider' })]);
+    selectQueue.push([makeMessageRow({ clientId: 'target-user', createdAt: 3000 })]);
+    selectQueue.push([makeMessageRow({ role: 'assistant', agentMeta: JSON.stringify({ uuid: 'old-anchor' }) })]);
+    selectQueue.push([makeSourceRow({ id: 'child', agentDeviceId: 'device-b' })]);
+    remoteInvokeMock.mockImplementation(async (_device, _channel, [request]) => {
+      if (request.op === 'caps') return { ok: true, result: {
+        version: 1, agents: [], maxRuns: 16, uploadChunkBytes: 1024, maxPayloadBytes: 2048,
+        ...(mode !== 'old-peer' ? { nativeFork: true } : {}),
+      } };
+      if (mode === 'timeout') return { ok: false, error: { code: 'TIMEOUT', message: 'unknown outcome' } };
+      return { ok: true, result: { newSdkSessionId: 'native-child', uuidMap: [['old-anchor', 'new-anchor']] } };
     });
+    if (mode === 'ready') {
+      await forkSessionAtMessage('src-session', 'target-user');
+      const args = txCalls[0].args as { newSession: Record<string, unknown>; uuidMap: unknown };
+      expect(args.newSession).toMatchObject({ agentDeviceId: 'device-b', providerId: 'shared-provider', sdkSessionId: 'native-child' });
+      expect(args.uuidMap).toEqual([['old-anchor', 'new-anchor']]);
+      expect(remoteInvokeMock).toHaveBeenLastCalledWith('device-b', 'maker:remote-agent:v1', [
+        expect.objectContaining({ op: 'fork', sourceSessionId: 'src-session', newSessionId: args.newSession.id, upToMessageId: 'old-anchor' }),
+      ]);
+    } else {
+      await expect(forkSessionAtMessage('src-session', 'target-user')).rejects.toThrow(
+        mode === 'old-peer' ? 'REMOTE_AGENT_PEER_TOO_OLD' : /unknown outcome|TIMEOUT|UNREACHABLE/,
+      );
+      expect(txCalls).toHaveLength(0);
+    }
+    expect(remoteInvokeMock).toHaveBeenCalledTimes(mode === 'old-peer' ? 1 : 2);
     expect(forkSdkSessionMock).not.toHaveBeenCalled();
-    expect(txCalls).toHaveLength(0);
   });
 
   it('refuses the encrypted-content fork for a Codex task whose agent runs on another computer', async () => {

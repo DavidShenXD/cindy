@@ -2954,9 +2954,9 @@ function forkSession(db: Database.Database, args: unknown): { messageCount: numb
         sdk_session_id, total_token_usage, total_cost_usd, context_tokens,
         context_window, context_window_runtime, fast_mode, cleared_at, pinned_at, user_send_at,
         agent_kind, workspace_kind, codex_history_has_product_prompt,
-        parent_session_id, forked_at_message_id,
+        parent_session_id, forked_at_message_id, agent_device_id,
         created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(
       expectString(newSession.id, 'newSession.id'),
       expectString(newSession.title, 'newSession.title'),
@@ -2985,6 +2985,7 @@ function forkSession(db: Database.Database, args: unknown): { messageCount: numb
           : 0,
       nullableString(newSession.parentSessionId),
       nullableString(newSession.forkedAtMessageId),
+      nullableString(newSession.agentDeviceId),
       expectNumber(newSession.createdAt, 'newSession.createdAt'),
       expectNumber(newSession.updatedAt, 'newSession.updatedAt'),
     );

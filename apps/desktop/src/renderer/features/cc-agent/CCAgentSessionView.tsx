@@ -5018,7 +5018,6 @@ function CCAgentSessionContent({
       // 消息下方 Fork / Rewind icon 的显示 (Codex rewind=false → 隐藏)。
       agentKind={session?.agentKind}
       remoteHostId={session?.remoteHostId ?? null}
-      agentOnOtherDevice={Boolean(agentDeviceId)}
       sessionSource={session?.source}
       // text-lightbox-trigger-extension F1/F2: cwd flows from session
       // owner down through MessageStream → AssistantMessage / UserMessage.

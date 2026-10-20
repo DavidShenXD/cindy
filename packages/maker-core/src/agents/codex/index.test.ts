@@ -24325,6 +24325,23 @@ describe('CodexAgent native fork anchor events', () => {
 });
 
 describe('CodexAgent.forkSdkSession', () => {
+  // Shared-provider forks must never discover history in the owner's default home.
+  it('forks shared-provider history in the host-resolved guest home', async () => {
+    const resolveCodexThreadStorage = vi.fn();
+    const prepareCodexResumeSession = vi.fn();
+    const agent = new CodexAgent(createDeps({}, { resolveCodexThreadStorage, prepareCodexResumeSession }));
+    const home = path.join(os.tmpdir(), 'guest-fork-fixture');
+    const codexHome = path.join(home, 'codex');
+    const host = installFakeHost(agent, undefined, { userAgent: 'mock-codex/0.153.4', codexHome });
+    await expect(agent.forkSdkSession({ sourceSdkSessionId: 'guest-source', upToMessageId: undefined,
+      lastTurnId: 'guest-turn', hostedGuestHome: home, providerId: 'xd' }))
+      .resolves.toMatchObject({ newSdkSessionId: 'fork-thread-id' });
+    expect(host.getHost).toHaveBeenCalledWith(undefined, expect.anything(), expect.objectContaining({
+      historyHome: codexHome, sqliteHome: codexHome, deviceHostedGuestProviderId: 'xd',
+    }));
+    expect(resolveCodexThreadStorage).not.toHaveBeenCalled();
+    expect(prepareCodexResumeSession).not.toHaveBeenCalled();
+  });
   it('reads cross-account fork boundaries and records the child in the source index', async () => {
     const recordCodexThreadLocation = vi.fn(async () => {});
     const agent = new CodexAgent(createDeps({}, {
