@@ -1,0 +1,628 @@
+<!-- 由 pnpm ui:check 生成；pnpm ui:check:publish 把截图发到作者 fork 并换上图片链接 -->
+- 截图来源：单页验证 `pnpm ui:check --changed=b966cbb69a9bb5cf46a950c36a03a43401f300fa --theme all --output automation-evidence/9695-final-ui-check`，Windows · Electron 42.11.12（Chromium 148.0.7778.280，与 Cindy 同一渲染内核）；真实组件与主题，场景数据，不是登录账号下的完整 Cindy
+- 版本：`0963220af80d`（含未提交改动）
+- 结果：848/880 个场景通过，56 条警告
+- 页面 `agent-relocation`：light / dark · zh-CN · 680×340 / 320×340
+  - `default`：Native history resumed on the target computer
+  - `fallback`：Explicit summary fallback
+  - `narrow`：Summary badge at 320px
+  - 未覆盖：Actual device transport, Harness startup and native mobile rendering. Uses fixture history.
+  - 场景替换的模块（未验证）：`src/renderer/features/learn/LearnStatusCard`、`src/renderer/features/bots/BotCollaborationCard`
+- 页面 `ask-user-question`：light / dark · zh-CN · 320×620 / 320×700 / 320×550 / 320×400 / 320×600 / 800×600 / 800×700 / 320×800
+  - `input-free`：Full-width free answer with inset voice and icon send
+  - `input-custom`：Full-width custom choice with inset controls
+  - `input-multi`：Multi-select custom answer uses one inset submit
+  - `input-plan`：Plan feedback uses a full-width input with inset send
+  - `unanswered`：Expired unanswered question remains readable once in history at 320 px
+  - `withdrawn`：Withdrawn question retains draft and offers supplemental sending at 320 px
+  - `mcp-form-error`：MCP required/length error keeps draft at 320 px
+  - `mcp-form-enum`：MCP literal Other enum survives and both values reach receipt
+  - `default`：Question with a bare HTML filename and URL
+  - `narrow`：Long references at 320 px
+  - `dictation-starting`：Answer microphone starting
+  - `dictation-listening`：Answer recording with stop action
+  - `dictation-processing`：Answer transcription pending at 320 px
+  - `dictation-speaker-filtered`：Answer recording explains that the voiceprint filter ignored someone else, at 320 px
+  - `unresolved`：Missing and ambiguous references remain plain text
+  - `voice-single`：Voice choice instructions with an active listening toolbar
+  - `voice-multi`：Spoken multi-selection awaits confirmation in the existing card
+  - `voice-narrow`：Voice confirmation and toolbar at 320 px
+  - `voice-speaker-filtered`：Call bar explains that the voiceprint filter ignored someone else
+  - 未覆盖：Actual microphone/ASR/TTS, task execution, host file contents, browser navigation and remote connectivity
+  - 场景替换的模块（未验证）：`src/renderer/voice-input/captureSession`、`src/renderer/voice-input/workletUrl`
+- 页面 `attachment-preview-frame`：light / dark · zh-CN · 1280×800
+  - `default`：A zip that cannot be previewed opens in a compact centered panel over the dimmed conversation
+  - `markdown`：A Markdown document in the same floating panel
+  - `image`：An image in the same floating panel
+  - 未覆盖：Native traffic lights and Electron drag regions (geometry only), real file reads, Windows window controls, video/model/Mermaid viewers and Mobile; file stat, document text and image bytes are fixture data
+  - 场景替换的模块（未验证）：`src/renderer/features/cc-agent/workdir-browse/DrawioPreview`、`src/renderer/features/cc-agent/workdir-browse/PdfPreview`
+- 页面 `automation-unread`：light / dark · zh-CN · 960×640 / 360×640
+  - `demo`：Interactive task sidebar preview with reading and reset controls
+  - `default`：Expanded history includes the header task; collapsed unread rows exclude it
+  - 未覆盖：Scheduler delivery, persisted read state, full sidebar ancestors and remote devices
+  - 场景替换的模块（未验证）：`src/renderer/contexts/AuthContext`
+- 页面 `billing-orders`：light / dark · zh-CN · 1040×700 / 560×900 / 360×900
+  - `default`：Paid renewal, tax-inclusive top-up and partially refunded upgrade in the existing list
+  - `narrow`：Narrow existing list with long historical product name
+  - `legacy`：Missing historical payment facts and a zero-paid settled invoice
+  - `error`：Read failure keeps existing rows and offers reload
+  - `invoice-alipay`：Invoice request shows the Alipay transaction number
+  - `invoice-stripe`：Invoice request shows the Stripe PaymentIntent ID
+  - `invoice-missing`：Historical invoice without a saved transaction number
+  - `invoice-narrow`：Long transaction number in a narrow invoice dialog
+  - `refund-list`：Refund and invoice buttons are directly visible on each order row
+  - `refund-list-narrow`：Both order actions stay visible in a narrow list
+  - `refund-alipay`：Refund email dialog for an Alipay subscription invoice
+  - `refund-stripe`：Refund email dialog for a Stripe top-up
+  - `refund-narrow`：Refund dialog and long transaction ID at 360px
+  - `support-footer`：Clickable feedback email follows order history and pagination in the real billing page
+  - `support-footer-narrow`：Footer help remains readable at 360px
+  - 未覆盖：Real payment/provider traffic, main/preload IPC, account loading, subscription actions and native mail application
+- 页面 `bot-capabilities`：light / dark · zh-CN · 640×1400
+  - `default`：All groups with the owner’s real skills and tools; unfold the local skills
+  - `system-off`：Todos turned off: the switch and the group count follow
+  - `core`：Core skill page with the plain-language summary and the original text
+  - `system`：A system skill page explains what turning it off stops
+  - `learned`：A learned skill page with its switch, content, edit and delete
+  - `empty`：No learned skills yet
+  - 未覆盖：Teammate runtime, prompt and tool gating, persistence, remote computers and the phone page; covered by vitest and the isolated Desktop.
+- 页面 `bot-model-settings`：light / dark · zh-CN · 440×880
+  - `default`：Unavailable primary, backup and task model; status belongs to the model
+  - `available`：Long available name with reasoning effort; no unavailable status on this model
+  - `four-backups`：Four visible backups with unbroken IDs and working reorder/remove controls
+  - `inherited`：Task inherits primary, using the same complete-name presentation
+  - `global-settings`：Global settings row uses the same wrapped picker
+  - `shared-only`：Shared-only Gemini/Terra labels resolve in primary, backup and task triggers
+  - `shared-same-id`：Shared labels and effort never fall back to a same-ID local model
+  - 未覆盖：Live catalog discovery, remote devices, persistence and model execution; fixture supplies providers and local component state
+  - 场景替换的模块（未验证）：`src/renderer/hooks/useModelRouteDevices`
+- 页面 `branch-sync`：light / dark · zh-CN · 560×400 / 360×400
+  - `default`：Main-task capsule, selected-branch details, remote group and successful fetch
+  - `worker`：Compact Worker branch-only capsule
+  - `unchecked`：Unchecked main-task worktree excludes remote sources
+  - `conflict`：Disabled sync remains focusable and explains overlapping changes
+  - `diverged`：Diverged branches keep local source and explain why sync is unavailable
+  - `old-host`：Old controlled host has neither refresh button nor remote group
+  - 未覆盖：Git processes, device-link transport and native task creation; covered by unit and Git integration tests
+- 页面 `chat-fork`：light / dark · zh-CN · 800×480 / 320×520 / 640×520
+  - `default`：Task using a shared model: fork from a user message or an assistant reply
+  - `ssh`：SSH workspaces still hide the unsupported fork action
+  - `companion`：Completed companion replies retain read-aloud and stop in the persistent message footer
+  - `companion-narrow`：Reply, read-aloud and more remain accessible below a long reply at 320 px
+  - `companion-thread`：2026-10-29: native private reply in a 320px topic retains full width and accessible actions below
+  - 未覆盖：Native remote execution, database writes and real speech playback; plugin cards are absent from these messages
+  - 场景替换的模块（未验证）：`src/renderer/components/chat/GhostToolCard`
+- 页面 `chat-video`：light / dark · zh-CN · 800×600
+  - `default`：Inline player retains the original native playback and fullscreen controls
+  - `error`：Media errors show an unavailable state and a working Retry action, without claiming the file was deleted
+  - `menu-inline`：Local video context menu stays visible and clickable above native fullscreen
+  - `menu-lightbox`：Lightbox uses the same fullscreen menu and keeps focus inside the player
+  - 未覆盖：Electron fullscreen permission and OS transitions require the full Desktop sandbox; clipboard/folder APIs are fakes and local protocol bytes are supplied by the fixture.
+- 页面 `code-copy-visibility`：light / dark · zh-CN · 840×480
+  - `default`：A short code block retains its visible copy action
+  - `long`：A wrapped plain-text first line stays clear of the copy button
+  - `highlighted`：Highlighted long code remains readable and copies complete text
+  - 未覆盖：Full application, OS clipboard readback, mobile native rendering. Clipboard writes are captured at navigator.clipboard.
+- 页面 `companion-composer`：light / dark · zh-CN · 760×360 / 360×400
+  - `late-attachment`：A cache result from the unmounted composer restores its image without replacing fresh text inside the 120ms save window
+  - `recommendation`：Recommendation and call coexist; starting a call preserves the suggestion, accepting it restores Send
+  - `recommendation-narrow`：Recommendation and call remain usable at narrow width
+  - `voice-hold`：Empty composer hints, native mouse selection during hold, and button hold/click release semantics
+  - `voice-speaker-filtered`：Recording explains above the composer that the voiceprint filter ignored someone else
+  - `default`：Empty/text/attachment action switch, stable target, keyboard send, call return and stop/queue
+  - `narrow`：Same companion interactions at narrow width
+  - 未覆盖：Microphone/ASR, live companion tasks, real media IO and speech synthesis; host services, delayed image cache, model catalog and dictation hook use scenario data. Windows runtime is not exercised.
+  - 场景替换的模块（未验证）：`src/renderer/components/new-chat/PermissionSelector`、`src/renderer/components/new-chat/ExtraDirsButton`、`src/renderer/components/new-chat/NewGoalDialog`、`src/renderer/components/new-chat/SlashCommandPalette`、`src/renderer/components/new-chat/AtMentionPanel`、`src/renderer/hooks/useAgentCapabilities`、`src/renderer/hooks/useAvailableAgents`、`src/renderer/hooks/useConnectedSource`、`src/renderer/hooks/useProviders`、`src/renderer/hooks/useDeviceProviders`、`src/renderer/voice-input/useVoiceInput`
+- 页面 `companion-message-actions`：light / dark · zh-CN · 1000×650
+  - `default`：No topic: quote/copy always visible, create topic in More
+  - `read`：Original topic entry with count/time
+  - `unread`：Original topic entry with unread indicator
+  - 未覆盖：Live model/server persistence and OS clipboard. The isolated host denies clipboard; a recorder verifies requested text and feedback. Topic panel uses real failed state with sample data; native mobile tested separately.
+  - 场景替换的模块（未验证）：`src/renderer/lib/makerChatStore`、`src/renderer/features/cc-agent/CCAgentSessionView`、`src/renderer/components/chat/GhostToolCard`、`src/renderer/hooks/useAgentCapabilities`、`src/renderer/hooks/useAvailableAgents`、`src/renderer/components/new-chat/PermissionSelector`、`src/renderer/components/new-chat/NewGoalDialog`、`src/renderer/components/new-chat/SlashCommandPalette`、`src/renderer/components/new-chat/AtMentionPanel`、`src/renderer/hooks/useDeviceProviders`、`src/renderer/hooks/useConnectedSource`、`src/renderer/hooks/useProviders`、`src/renderer/voice-input/useVoiceInput`
+- 页面 `controlled-model-catalog`：light / dark · zh-CN · 780×720
+  - `default`：A controls B: choose A, B-only share, then B private source
+  - `local`：Local catalog still includes private sources without remote reads
+  - `worker`：Worker uses B-only share; creation returns the actual share ID
+  - `favorites`：B-only share favorites read and write B without any membership on A
+  - 未覆盖：Real device-link transport, main authorization, actual Agent execution and persistence
+- 页面 `design-effects`：light / dark · zh-CN · 760×720
+  - `default`：Floating shadow, field panel shadow, title-bar icon colour and the HSL colours that used to be invalid; create-agent states are token samples
+  - 未覆盖：Other floating layers changed by the same class rewrite (find bar, terminal notices, schedule panels); non-Cindy themes
+- 页面 `error-identity-restore`：light / dark · zh-CN · 780×620 / 320×640
+  - `default`：Snapshot-only restore with a later system row and an unrelated historical error
+  - `narrow`：Same restore at 320 px
+  - 未覆盖：Real database, Host/relay transport, upstream model execution; Host binding covered by unit tests
+  - 场景替换的模块（未验证）：`src/renderer/components/chat/GhostToolCard`
+- 页面 `explicit-file-links`：light / dark · zh-CN · 560×420
+  - `default`：Missing authored link remains clickable, explains failure, offers a copy menu and requests a fresh lookup after restoration
+  - `remote`：Missing remote link remains clickable without local filesystem access
+  - `untrusted`：Content without privileged file access stays inert
+  - 未覆盖：Real filesystem, remote transport, PDF decoding and OS opening; mobile native rendering.
+  - 场景替换的模块（未验证）：`src/renderer/features/cc-agent/workdir-browse/PdfPreview`
+- 页面 `file-body-error`：light / dark · zh-CN · 180×160 / 360×240
+  - `default`：Continuous Windows path wraps in a narrow pane and scrolls from start to end
+  - `posix`：A long POSIX path with Unicode and spaces remains readable
+  - `short`：Short friendly errors stay centered and do not need scrolling
+  - 未覆盖：Filesystem/IPC, full sidebar interaction and OS clipboard; these require full mock-client acceptance
+- 页面 `forwarded-request`：light / dark · zh-CN · 760×860
+  - `default`：Historical private-thread body: paragraphs, lists, code and attribution
+  - `task`：Attributed task input uses the same readable projection
+  - `fork`：Fork restores the original forwarded envelope in the new draft
+  - `rewind`：Rewind restores the original forwarded envelope in the current draft
+  - `quote`：Reply snapshots and live quote previews use readable text
+  - `search`：Real search results render projected previews and hit snippets
+  - `card`：Open a historical private thread from its compact trace
+  - 未覆盖：IPC transport, persistence, history reload and native mobile; historical API bodies are supplied by the fixture
+  - 场景替换的模块（未验证）：`src/renderer/features/bots/botStore`、`src/renderer/lib/makerChatStore`
+- 页面 `group-chat`：light / dark · zh-CN · 1280×800 / 720×700 / 800×600 / 1000×760 / 900×700 / 900×760 / 900×520 / 700×1200 / 1100×760 / 800×800
+  - `share-pending`：Pending topic copy appears in the main chat while the host receipt is unresolved
+  - `send-status`：Mac send flicker regression: real composer/outbox/timeline, controlled slow receipt; row geometry stays stable and failed sends remain retryable
+  - `remote-limits`：#6835: lane-unavailable notices show device and total task limits with recovery advice
+  - `work-queued-step-mixed`：#8064 review: queued plan step does not override a running reply
+  - `work-queued`：#8047: queued execution is busy without speaking or elapsed work
+  - `process-history`：Owned teammate historical process, final reply outside
+  - `process-empty`：Final-only reply explains the empty process
+  - `process-unavailable`：Unavailable process shows a retry action
+  - `process-other-owner`：Other members never receive a private process entry
+  - `work-thinking`：Actual group work status, scenario data: thinking
+  - `work-tools`：Actual group work status, scenario data: command execution
+  - `work-reading`：Actual group work status, scenario data: file reading
+  - `work-waiting`：Actual group work status, scenario data: needs confirmation
+  - `work-waiting-no-start`：#7583: waiting without a card or start time keeps the original task entry and shows no invented elapsed time
+  - `work-stopping`：Actual group work status, scenario data: stop requested
+  - `work-unknown`：Remote work with no readable task: generic activity, no invented thinking
+  - `work-remote`：Authenticated remote target projection, scenario data (not a live device-link run)
+  - `work-parallel`：Two concurrent execution rows, separate task entries and one group stop
+  - `work-parallel-stopping`：Last execution is stopping while the first still runs: the group stop control remains available
+  - `body-answer`：#6550: component body is readable; literal punctuation and surrounding Markdown are retained
+  - `default`：Empty group, short controller name, expanded sidebar
+  - `long-thread`：40 messages: bottom pin and history position survive notice changes
+  - `long-device`：Long controller device name in the notice
+  - `multiline`：Eight-line draft pushes the composer up
+  - `crowded`：Nine members from three accounts: the header names the group and a member count, not every member
+  - `no-sidebar`：Collapsed sidebar layout
+  - `bubbles`：Teammate bubbles: quote, corner reaction, thread entry, task card, long text at the width cap; hover shows the toolbar beside the bubble
+  - `arrangement`：Single-speaker server group, nobody named: the queue card stands on its own, Aster answered and Nova is speaking next by itself
+  - `work-mentioned`：Preserved running work plan in mentioned mode: ordinary text has no implicit worker recipient
+  - `arrangement-done`：The same queue once every turn is done: no 继续 row
+  - `arrangement-long`：Seven teammates: the first five answered by themselves, the card folds to three turns around Quill, who waits for 继续
+  - `division-waiting`：A 分工 you started stopped after step 1: the card footer switch is off and 下一步 · 继续 waits
+  - `division-auto`：The same 分工 with 做完一步自动交给下一位 on: Nova started step 2 by itself, no 继续 row
+  - `settings`：Single-speaker group settings: reply mode, organizer, project folder and 分工交接 (off) as before; no speaking mode
+  - `division`：Single-speaker group: 「+」→ 安排分工 is offered again; tagged, the composer says steps may be written out
+  - `thread-unread`：Server read state: unread thread entries (with @you), the in-chat 话题 hint above the composer and its list of this group's Threads
+  - `thread-follow`：The Thread panel's 关注 switch, off by default; switched on it reads 已关注
+  - `read-receipts`：Bot group 消息已读: my messages end in one check (sent) or two (read) inside the bubble; clicking it lists who has read (names only, never who has not), and a very large group shows only 已读 N/总人数
+  - `read-receipts-mask`：Bot group 消息已读 on 面具模式 messages (a teammate replied in my name): still my messages, one or two checks and the read list; the mask avatar beside the bubble never meets the check
+  - `read-receipts-teammates`：Bot group 消息已读 in a group of only teammates: a teammate reads a message when its computer takes the execution up, so the check turns double and the list names the teammates (no times)
+  - `read-receipts-fill`：Bot group 消息已读: messages of growing length, so one has a last line just full: the check moves onto a row of its own instead of covering text
+  - `read-receipts-thread`：Bot group 消息已读 in the Thread panel: my replies end in a check inside the bubble, level with the last line
+  - `bubbles-wrapped`：PR #6549: wrapped reactions keep both toolbars level with their bubbles; server messages with empty mention ids still open unique member cards
+  - 未覆盖：Real IPC/network sending (send-status/share-pending control host receipts), round control, real device-link control and revocation, answering pending owner interactions, plans and attachment IO; the bubbles case shows a task snapshot, not a live task; the sidebar renders the real group row for work-state cases and is otherwise an empty frame
+  - 场景替换的模块（未验证）：`src/renderer/voice-input/workletUrl`、`src/renderer/features/cc-agent/workdir-browse/FileBodyView`
+- 页面 `group-jump-bottom`：light / dark · zh-CN · 1280×800
+  - `short-main-follow`：Upward input in a fitting main chat preserves follow when content grows
+  - `short-topic-follow`：Upward input in a fitting topic preserves follow when content grows
+  - `short-main-read`：Explicit End/wheel return acknowledges an inspected main chat even when it fits without scrolling
+  - `thread-process`：A process in the actual topic sidebar uses the same stable disclosure behavior as the main group
+  - `live-process`：Running process disclosure keeps its heading still through each animation frame
+  - `history-process`：Historical process disclosure keeps the reading position and allows returning to live follow
+  - `short-growth`：A located short chat keeps its reading position and reveals unread navigation when content grows
+  - `default`：History navigation temporarily replaces topic hints without changing scroll geometry
+  - `with-control`：Navigation replaces both topic and connection bubbles; idle/return restores them unchanged
+  - 未覆盖：PDF/Drawio previews and real network; actual group layout and native input use synthetic host data. Short-main read checks supply a focused-host signal to the hidden Electron window.
+  - 场景替换的模块（未验证）：`src/renderer/voice-input/workletUrl`、`src/renderer/features/cc-agent/workdir-browse/FileBodyView`
+- 页面 `group-mask`：light / dark · zh-CN · 1040×800
+  - `default`：Personal stand-in: default
+  - `thread`：Personal stand-in: thread
+  - `paused`：Personal stand-in: paused
+  - `scheduled`：Personal stand-in: scheduled
+  - `manual`：Personal stand-in: manual
+  - `off`：Personal stand-in: off
+  - `offline`：Personal stand-in: offline
+  - `unbound`：Personal stand-in: unbound
+  - `error`：Personal stand-in: error
+  - `loading`：Personal stand-in: loading
+  - 未覆盖：Server identity, real agent replies, persistence, private digest delivery and cross-device presence. All events are isolated fixture data.
+  - 场景替换的模块（未验证）：`src/renderer/voice-input/workletUrl`
+- 页面 `group-mention-scroll`：light / dark · zh-CN · 1040×800
+  - `default`：Locate the newest @ in a short conversation without moving the composer
+  - `history`：Locate a recent @ after scrolling history without moving the composer
+  - 未覆盖：Server identity, real agent replies, persistence, private digest delivery and cross-device presence. All events are isolated fixture data.
+  - 场景替换的模块（未验证）：`src/renderer/voice-input/workletUrl`、`src/renderer/features/cc-agent/workdir-browse/DrawioPreview`、`src/renderer/features/cc-agent/workdir-browse/PdfPreview`
+- 页面 `group-talk-skip`：light / dark · zh-CN · 600×380
+  - `default`：Talk card: default
+  - `running`：Talk card: running
+  - `stopped`：Talk card: stopped
+  - `viewer`：Talk card: viewer
+  - `legacy`：Talk card: legacy
+  - `busy`：Talk card: busy
+  - `waiting`：Talk card: waiting
+  - 未覆盖：API, actual devices, leases and Mobile native runtime. Skip receipt is fixture data; server concurrency is tested separately.
+- 页面 `host-connection`：light / dark · zh-CN · 840×360 / 320×420
+  - `default`：Disconnected client keeps its page and retries
+  - `host-pairing`：Pair again without leaving the editor, at phone width
+  - `host-restoring`：Snapshot reconciliation after a restart
+  - `host-retry`：Failed read recovery offers retry
+  - 未覆盖：Full application, real authentication, networking or model execution
+- 页面 `hover-tooltip-window-blur`：light / dark · zh-CN · 900×360
+  - `default`：悬停任务行，指针离开 / 窗口失活
+  - 未覆盖：真实 gh 状态查询、真实操作系统级窗口切换
+- 页面 `im-default-model`：light / dark · zh-CN · 660×520 / 320×640
+  - `default`：Automatic selection shows the actual model
+  - `im-automatic`：Automatic selection shows the actual model
+  - `im-fixed`：Explicit choice can return to automatic without resetting permissions
+  - `im-unavailable`：No usable provider is explained without inventing a default
+  - `im-narrow`：Automatic selection at 320px
+  - 未覆盖：Live credentials and model discovery; host supplies a catalog and settings writes
+- 页面 `issue6796-preview`：light / dark · zh-CN · 720×1100
+  - `default`：Companion mixed and image-only long attachments
+  - `boundaries`：Ratio above/equal 3, portrait, landscape and unchanged tool output
+  - `shared`：Task and group attachment, including 180px container
+  - `replacement`：Replace long image with ordinary portrait after loading
+  - 未覆盖：Live sending/storage, remote media transport, native copy/reveal, mobile and Windows
+- 页面 `magpie-model-sources`：light / dark · zh-CN · 780×520 / 320×520
+  - `default`：Existing aggregate source rows show distinct suppliers; same model name on two routes
+  - `provider`：Existing descriptions replaced; unknown model remains single-line
+  - `narrow`：Same production rows at 320px
+  - 未覆盖：Full Desktop, IPC persistence, actual Magpie calls and ModelSelector icon dispatch; gateway response is fixture data
+  - 场景替换的模块（未验证）：`src/renderer/components/new-chat/ModelSelector`
+- 页面 `markdown-preview-find`：light / dark · zh-CN · 1040×760
+  - `default`：Document-only matching, visible pointer targets, table navigation and Escape order
+  - `background-editor`：An existing file-editor search yields shortcuts to the foreground preview
+  - `source-find`：Markdown source search owns Find and Escape ahead of global search
+  - `source-background-editor`：Source search reopens without stealing or closing a covered editor search
+  - `nested-mermaid`：A diagram opened from the document owns shortcuts until it closes
+  - `loading-editor`：The foreground document owns find and Escape before its file read completes
+  - `focus-restore`：Closing find restores the document toolbar opener for keyboard navigation
+  - `ime-escape`：An IME-cancelling Escape and its repeats keep search open until a new press
+  - `outside-focus`：Focus stays in the preview; Escape closes find first from the document body
+  - `background-project-search`：The covered project-search sidebar retains its mode and query until the document closes
+  - `background-ask-voice`：Preview Escape preserves question-card dictation and its answer draft
+  - `background-voice`：Preview Escape leaves the real composer voice-cancel handler untouched until the document closes
+  - `fullscreen-video`：Fullscreen video exit and menus preserve search until a fresh Escape
+  - `json-preview`：Non-Markdown preview owns Cmd+F: the search bar lives inside the lightbox and matches JSON content
+  - `toolbar-tooltip`：Focused and hovered toolbar tooltips own Escape before document find
+  - 未覆盖：Installed release, native menus/IME, PDF/draw.io, file/search backends, microphone capture and ASR; file/search data, video bytes, voice state and draft UUIDs are controlled fixtures
+  - 场景替换的模块（未验证）：`src/renderer/features/cc-agent/workdir-browse/DrawioPreview`、`src/renderer/features/cc-agent/workdir-browse/PdfPreview`、`src/renderer/voice-input/captureSession`、`src/renderer/voice-input/workletUrl`、`src/renderer/voice-input/useVoiceInput`
+- 页面 `mcp-inline-form`：light / dark · zh-CN · 600×1000 / 320×1100 / 600×600
+  - `default`：The existing Settings form expanded in the message flow
+  - `narrow`：Inline form at 320 px
+  - `invalid`：Original validation and focus in the embedded form
+  - `result-error`：Saved configuration remains saved when result delivery fails; retry and cancel remain available
+  - `settings`：Original modal remains a modal
+  - `layout`：Production message scrollport carries the entire form; composer stays fixed
+  - 未覆盖：OS safeStorage, real account switching, MCP network connections and vendor model calls use separate checks; host APIs here return fixture results.
+  - 场景替换的模块（未验证）：`src/renderer/components/chat/GhostToolCard`
+- 页面 `message-focus`：light / dark · zh-CN · 900×600
+  - `default`：Ordinary task message navigation
+  - `compact`：Companion message navigation
+  - 未覆盖：Host search transport, native mobile, agent execution
+  - 场景替换的模块（未验证）：`src/renderer/components/chat/GhostToolCard`
+- 页面 `model-selector-performance`：light / dark · zh-CN · 1100×800
+  - `default`：20 models; open All, then filter OpenAI with the hidden width probe
+  - `large`：200 models across two engines
+  - `stress`：600 models across two engines
+  - 未覆盖：Real accounts, network discovery, whole-app load, macOS native input and GPU presentation
+- 页面 `nightly-learning`：light / dark · zh-CN · 620×1100
+  - `default`：Pending conversations, last night learned five changes (one already undone), two approaches being watched
+  - `idle`：Nothing new since the last run; the next run will be skipped without calling a model
+  - `paused`：Turned off: conversations are still counted
+  - `failed`：Last run failed; weekly frequency; memory turned off
+  - `new`：Never run yet
+  - `not-here`：This computer is not the teammate’s main computer: no nightly row, history page explains why
+  - 未覆盖：The host job itself (model call, memory and skill writes), routine scheduling, the settings drawer chrome, Mobile
+- 页面 `official-feishu-card`：light / dark · zh-CN · 720×900 / 360×900
+  - `default`：Pending bind: authorize-page actions plus the one-time link code with copy
+  - `unavailable`：Server lacks provider:feishu: the organization has not set up the bot
+  - `unlinked`：Unlinked account with a live server socket: unbound badge and relink action
+  - `released`：Unlink acknowledged: connection released and switch off; enable again to link
+  - `confirmed`：Linked: open bot and unlink actions
+  - `narrow`：Pending bind at 360px: code and actions wrap
+  - 未覆盖：Workspace preference editor (stubbed), live hook IPC, binding requests and clipboard; binding state machine and URL validation have main-process unit tests
+  - 场景替换的模块（未验证）：`src/renderer/components/settings/HookWorkspacePrefsEditor`
+- 页面 `orca-worker-project`：light / dark · zh-CN · 560×640
+  - `attention-error`：Idle Worker with unhandled task error in tabs, both menus and collapsed trigger
+  - `attention-awaiting`：Waiting confirmation shown as blue avatar dots including collapsed trigger
+  - `attention-done`：Completion unread stays green for unselected Worker and does not aggregate on trigger
+  - `default`：Inherited Lead worktree, new-worktree branch chooser, project search and dirty other project
+  - `same-repo`：Browsing the main checkout preserves that selection; current-project row restores inherited worktree
+  - `browse-error`：Native folder dialog failure leaves the current project usable
+  - `missing`：Missing directory explains why creation cannot continue
+  - `empty`：Empty repository explains why worktree creation is unavailable
+  - `detached`：Detached HEAD is displayed as a short SHA and allows choosing a real branch
+  - `workers`：Worker project badge appears only for the other project
+  - `dialogue`：Dialogue Lead hides checkbox until a Git project is selected
+  - 未覆盖：Full Worker creation popover, model/device selection, native folder dialog, filesystem discovery, IPC and actual worktree creation
+- 页面 `pending-queue`：light / dark · zh-CN · 880×560
+  - `default`：Queue bubbles: reorder, edit lock and cancel from the status menu
+  - 未覆盖：Live host dispatch, remote reconnection, full MessageStream scrolling
+  - 场景替换的模块（未验证）：`src/renderer/lib/makerChatStore`、`src/renderer/hooks/useAgentCapabilities`、`src/renderer/hooks/useAvailableAgents`、`src/renderer/hooks/useDeviceProviders`
+- 页面 `pending-queue-gallery`：light / dark · zh-CN · 960×780
+  - `attachment-only`：只发附件，没有文字
+  - `files-only`：只发文件
+  - `quote`：引用消息
+  - `device`：从手机发来的消息
+  - `autoretry`：自动重试中
+  - `quota`：额度不足
+  - `default`：正常排队
+  - `single`：只有一条消息
+  - `menu`：队首、中间和队尾菜单
+  - `editing`：编辑中与底部输入框
+  - `sending`：尚未确认入队
+  - `steering`：插话发送中
+  - `paused`：停止后队列暂停
+  - `stopping`：正在确认停止
+  - `error`：发送错误
+  - `credential`：等待切换凭证
+  - `remote-edit`：另一端正在编辑
+  - `locked`：队列操作锁定
+  - `readonly`：只读状态
+  - `many`：六条消息全部展示
+  - `long`：长消息折叠与展开
+  - `attachments`：图片与文件附件
+  - `companion`：伙伴聊天附件布局
+  - `sources`：其他任务、插件和自动化来源
+  - `synthetic`：系统续跑指令
+  - `delivered`：正式送达后的消息
+  - `empty`：队列清空
+  - 未覆盖：Sample state, not live host dispatch. Task-page inline paused/stopping rows are composed here. No real offline outbox or upload lifecycle.
+  - 场景替换的模块（未验证）：`src/renderer/lib/makerChatStore`、`src/renderer/hooks/useProviders`、`src/renderer/hooks/useAgentCapabilities`、`src/renderer/components/new-chat/PermissionSelector`、`src/renderer/components/new-chat/NewGoalDialog`、`src/renderer/components/new-chat/SlashCommandPalette`、`src/renderer/components/new-chat/AtMentionPanel`、`src/renderer/hooks/useAvailableAgents`、`src/renderer/hooks/useDeviceProviders`、`src/renderer/hooks/useConnectedSource`、`src/renderer/voice-input/useVoiceInput`
+- 页面 `pi-context`：light / dark · zh-CN · 560×740 / 320×860
+  - `default`：Native total separated from estimated sources
+  - `narrow`：Context sources at 320px
+  - `legacy`：Older payload without diagnostics
+  - 未覆盖：Native RPC and model behavior; synthetic diagnostic payload
+  - 场景替换的模块（未验证）：`src/renderer/features/learn/LearnStatusCard`、`src/renderer/features/bots/BotCollaborationCard`
+- 页面 `plugin-call-display`：light / dark · zh-CN · 720×640
+  - `default`：Autonomous plugin call never relabels user text; real result settles while assistant continues
+  - `explicit`：Explicit plugin selection remains selected during execution, later turns and history reload
+  - `mention`：Historical mention remains a quiet pill rather than upgrading to execution status
+  - 未覆盖：Real plugin execution, login, IPC transport and native mobile; history and tool results are fixture data.
+  - 场景替换的模块（未验证）：`src/renderer/components/chat/GhostToolCard`、`src/renderer/contexts/AuthContext`
+- 页面 `plugin-install-mail`：light / dark · zh-CN · 360×720 / 360×600 / 700×600
+  - `participant-avatars`：Real reader with Google contact, public email, domain logo and initials; image endpoints use fixture bytes
+  - `read-mail-body`：External images require a click; links follow chat navigation
+  - `two-mail-views`：Typing in either editor updates its peer without iframe navigation or blank paint
+  - `edit-mail-body`：Native whole-body selection, replace, delete, undo, and saved HTML round trip
+  - `refresh-mail-body`：Source updates with identical sanitized HTML must reveal the mail body
+  - `expanded-recipients`：Sidebar recipient rows retain expand/collapse with compact spacing
+  - `default`：Two configured plugin instances
+  - `narrow`：Long organization and plugin names in a narrow sidebar
+  - `source-change`：Source replacement and duplicate account impact
+  - `no-reader`：A restored tab with no mail plugin; original URL remains accessible
+  - `not-ready`：An unconfigured mail plugin without a pointless retry
+  - `read-failed`：A real read failure offers both original URL and retry
+  - 未覆盖：Mailbox tools, installer writes, account credentials, live mail content, native mobile rendering and external network connections
+  - 场景替换的模块（未验证）：`src/renderer/features/right-sidebar/registry`、`src/renderer/features/right-sidebar/lib/mailPreview`、`src/renderer/features/right-sidebar/plugins/mail-preview/MailCardBody`
+- 页面 `plugin-model-picker`：light / dark · zh-CN · 800×760 / 360×740
+  - `default`：Plugin picker with a complete initial configuration
+  - `plugin-config`：Plugin picker with a complete initial configuration
+  - `plugin-narrow`：Plugin picker in a narrow viewport
+  - `page-popover`：Plugin page button opens the real Host popover
+  - `page-popover-narrow`：Host popover in a narrow plugin panel
+  - `page-popover-bottom`：Bottom anchor flips within the viewport
+  - 未覆盖：Plugin transport, native WebView embedding, real provider entitlement, account changes, mobile and paid inference
+  - 场景替换的模块（未验证）：`src/renderer/contexts/AuthContext`
+- 页面 `pr-popover`：light / dark · zh-CN · 920×850
+  - `default`：Compact PR footer and separate settings with real plugin HTML
+  - `idle`：Following, pointer outside the follow row
+  - `hover`：Following, pointer over the follow row
+  - `settings`：Separate PR settings dialog
+  - `uninstalled`：Historical PR card remains but its plugin is uninstalled
+  - 未覆盖：Scheduler and real provider execution; HTML is generated by the GitHub plugin and sanitized; host responses are simulated
+  - 场景替换的模块（未验证）：`src/renderer/hooks/useSessionGitContext`、`src/renderer/contexts/PrRefsContext`、`src/renderer/contexts/AuthContext`
+- 页面 `project-picker-aliases`：light / dark · zh-CN · 620×440
+  - `default`：New-task project picker displays the saved alias and selects the original directory
+  - `move`：Move-task menu displays the same saved alias and selects the original directory
+  - `move-explicit-project`：Explicit membership is disabled even when execution uses a checkout
+  - 未覆盖：Real database persistence, full new-task submission and task relocation; fixture host supplies saved aliases and paths.
+- 页面 `provider-group-status`：light / dark · zh-CN · 1000×680 / 540×900
+  - `default`：Idle, busy, quota exhausted with known/unknown reset, and generic cooldown
+  - `remote`：The same collapsed statuses in the same-account read-only list
+  - `narrow`：Long translated quota status wraps alongside the existing controls
+  - 未覆盖：Real subscription reads, account routing, cross-device transport and Windows. All states and reset times are fixture data.
+- 页面 `provider-share-insights`：light / dark · zh-CN · 1220×900 / 1220×2100
+  - `owner`：Owner detail with two independent switches; writes affect fixture memory only
+  - `default`：Both capabilities; usage collapsed, models visible at desktop height
+  - `expanded`：Explicitly expanded usage with charts by person and model
+  - `subscription`：Read-only subscription windows with existing remaining bars
+  - `organization`：Organization remaining balance and known budget
+  - `warning`：15% remaining uses the existing quota warning
+  - `critical`：10% remaining uses the existing quota danger
+  - `low`：5% remaining keeps the danger state and true fill
+  - `full`：100% remaining fills the track without warning
+  - `unknown`：Unknown total has no fabricated percentage
+  - `zero`：True zero balance has a zero progress bar
+  - `quota-only`：Only remaining allowance shared
+  - `usage-only`：Only usage details shared
+  - `closed`：Both permissions disabled without disabling model use
+  - `group`：Two anonymous own accounts; borrowed accounts excluded
+  - `subscription-pool`：Each account of a shared multi-account subscription lists all of its own windows
+  - 未覆盖：Live cross-account transport, persisted permissions, real upstream quota, Windows. All numbers and names are fixture data.
+  - 场景替换的模块（未验证）：`src/renderer/hooks/useDeviceProviders`、`src/renderer/hooks/useProviders`
+- 页面 `provider-usage`：light / dark · zh-CN · 960×1000
+  - `default`：One card with people, current computers and models; removed-computer history stays in totals
+  - `no-group`：Provider without a group offers people and models only
+  - 未覆盖：Live usage retrieval, remote management, share mutations and actual device connectivity
+- 页面 `remote-model-access`：light / dark · zh-CN · 760×700
+  - `alias-all`：Codex and Pi/Claude aliases display once and are toggled together
+  - `alias-partial`：Existing Codex-only permission remains mixed and unchanged on save
+  - `alias-pi-ceiling`：Personal selection cannot exceed a Pi-only provider ceiling
+  - `alias-pi-only`：Pi-only catalogs save the actual chatgpt/ ID without fabricating a Codex ID
+  - `budget`：OpenAI single-model percentage limit
+  - `budget-claude`：Claude uses its own catalog and single-model percentage limit
+  - `budget-new-model`：A new catalog model can be selected without product code changes
+  - `budget-learning`：Unknown usage is not zero
+  - `budget-save-failure`：Retains a percentage change on save failure
+  - `budget-unsupported`：Provider group cannot add a percentage policy
+  - `default`：Provider-wide model selection
+  - `member`：Per-person model selection within the provider ceiling
+  - 未覆盖：Live IPC, persisted permissions and cross-device calls. Names and models are fixture data.
+- 页面 `scheduler-model`：light / dark · zh-CN · 720×600 / 1100×900
+  - `default`：Pick the shared source, then return to the local source
+  - `speed`：Edit, save and reopen automation speed through the real modal
+  - `shared-speed`：Edit and restore speed for a shared model source
+  - 未覆盖：Live device/share discovery, authorization, database persistence and task execution; catalogs and JSON save boundary use fixture data
+  - 场景替换的模块（未验证）：`src/renderer/hooks/useAvailableAgents`、`src/renderer/hooks/useAgentCapabilities`、`src/renderer/hooks/useProviders`、`src/renderer/lib/sessionService`、`src/renderer/hooks/useDeviceProviders`、`src/renderer/hooks/useModelRouteDevices`、`src/renderer/hooks/useProjectPickerOptions`、`src/renderer/hooks/useFeishuBot`、`src/renderer/hooks/useWecomGroupNotificationSettings`、`src/renderer/features/scheduler/hooks/useSessionReferences`、`src/renderer/features/scheduler/components/TemplateGallery`、`src/renderer/hooks/useDevicesProviders`
+- 页面 `settings-search`：light / dark · zh-CN · 1280×900
+  - `visibility-desktop-commit`：Desktop visibility previews during a real pointer drag and commits once
+  - `visibility-wallpaper-commit`：Wallpaper visibility has the same preview/commit behavior
+  - `glass-none-50`：Background sources share readable translucent cards
+  - `glass-none-100`：Background sources share readable translucent cards
+  - `glass-cindy-window-50`：Background sources share readable translucent cards
+  - `glass-cindy-window-100`：Background sources share readable translucent cards
+  - `appearance-desktop-hidden`：Hidden desktop retains blur 12 with a disabled slider
+  - `appearance-wallpaper-hidden`：Hidden wallpaper retains blur 12 with a disabled slider
+  - `personalization-custom`：Custom auxiliary slots forward search IDs to real model selector buttons
+  - `remote-signed-in`：Signed-in device controls and relay section with searchable targets
+  - `default`：Real general settings and all rendered rows
+  - `appearance`：Real appearance settings and all rendered rows
+  - `personalization`：Real personalization settings and all rendered rows
+  - `voice-input`：Real voice-input settings and all rendered rows
+  - `shortcuts`：Real shortcuts settings and all rendered rows
+  - `remote-control`：Real remote-control settings and all rendered rows
+  - `import`：Real import settings and all rendered rows
+  - `builtin-tools`：Real builtin-tools settings and all rendered rows
+  - `storage`：Real storage settings and all rendered rows
+  - `help`：Real help settings and all rendered rows
+  - `about`：Real about settings and all rendered rows
+  - `agent-island`：Real agent-island settings and all rendered rows
+  - `usage`：Real usage settings and all rendered rows
+  - `billing`：Real billing settings and all rendered rows
+  - `shared-tasks`：Real shared-tasks settings and all rendered rows
+  - `ghosts`：Real ghosts settings and all rendered rows
+  - 未覆盖：Native dialogs, persistence, real accounts, downloads, device connections and macOS native behavior
+  - 场景替换的模块（未验证）：`src/renderer/contexts/AuthContext`
+- 页面 `subscription-fast`：light / dark · zh-CN · 760×800 / 320×950
+  - `default`：Supplier and group allow Fast
+  - `prohibited`：Both levels prohibit Fast
+  - `pending`：Group reports an unconfirmed executor
+  - `narrow`：Subscription controls at 320 px
+  - 未覆盖：Real subscriptions, native Agent settings and cross-device delivery. Host APIs use fixture memory.
+- 页面 `teammate-feishu`：light / dark · zh-CN · 720×900 / 320×700
+  - `default`：Feishu creation prompt and link share one row
+  - `feishu-onboarding`：Feishu creation prompt and link share one row
+  - `feishu-lark`：Lark updates the link, description and submit label
+  - `feishu-expanded`：Expanded setup guide above the credential inputs
+  - `feishu-narrow`：320px viewport wraps guidance and keeps the form scrollable
+  - 未覆盖：Live Feishu/Lark login, application provisioning, external browser navigation, credential persistence and connection handshake; host writes are forbidden
+- 页面 `teammate-glance`：light / dark · zh-CN · 1040×760
+  - `default`：Cindy on several computers, todos with one due today, finished deliverables
+  - `menu`：Right-clicking a todo offers only Delete
+  - `new`：Empty teammate: only Computers; no todo suggestions or outputs
+  - `activity`：No todos, attributed recent tasks, unread result and true PR title
+  - `routines`：Never-run and paused routines mixed with ordinary tasks; direct timer icons in one list
+  - 未覆盖：Live todo/delegation data, cloud companion home switching, remote teammates over device-link, sending the quoted todo or 帮我查查, toggling the daily check, opening files
+  - 场景替换的模块（未验证）：`src/renderer/features/bots/botStore`、`src/renderer/lib/sessionAttentionStore`、`src/renderer/hooks/useCCSessions`、`src/renderer/contexts/PrRefsContext`、`src/renderer/features/bots/botFollowScopes`、`src/renderer/features/device-link/refreshRemoteSessions`、`src/renderer/features/device-link/useDeviceLinkDeviceList`、`src/renderer/features/bots/botDelegationLive`、`src/renderer/features/bots/useRemoteBots`
+- 页面 `teammate-process`：light / dark · zh-CN · 720×850 / 320×850 / 640×950
+  - `default`：Live private turn with stage notes and initial thinking
+  - `finished`：Completed private turn with final answer outside
+  - `retry`：Two failed attempts followed by a running read: current action stays visible
+  - `disclosure`：Frame-by-frame disclosure stability in a long companion conversation
+  - `disclosure-live`：Inspection survives completion, late updates and explicit follow
+  - `disclosure-reduced`：Reduced motion preserves the same reading position
+  - `live-refresh`：Loading work details does not add a row while the teammate is working
+  - `history-refresh`：History detail loading uses the existing heading; failures can still be retried
+  - `artifacts-wide`：Avatar, long reply, Excel preview and related file align in the production stream
+  - `artifacts-narrow`：A narrow companion column preserves card sizing
+  - `artifacts-thread`：The production topic panel and compact styles retain reply/artifact alignment
+  - `artifacts-no-avatar`：No avatar means no additional inset
+  - `artifacts-task`：Ordinary task layout stays unchanged
+  - `artifacts-cached`：Cached cards keep their height while remount stats are pending; confirmation enables them and deletion removes the entire row
+  - `artifacts-missing`：Missing files leave no empty avatar row
+  - 未覆盖：Full CCAgentSessionView, login, host execution, document opening, native mobile layout and transport
+  - 场景替换的模块（未验证）：`src/renderer/components/chat/GhostToolCard`、`src/renderer/contexts/AuthContext`
+- 页面 `teammates-section`：light / dark · zh-CN · 800×600
+  - `remote-running-snapshot`：Standalone remote running snapshot keeps the processing subtitle without an expanded orange dot
+  - `selected-remote-running-snapshot`：Selected remote Cindy retains its processing subtitle when only the running snapshot remains
+  - `running-preview-parity`：Local, remote and merged Cindy progress match the group breathing icon and orange text
+  - `completed-group-unread`：Completed unread uses only green points; ordinary unread uses an expanded gray count and collapsed blue point
+  - `message-kinds`：Bot result green, ordinary group unread count, group mention blue count; execution states retain priority
+  - `other-computer-running`：Merged Cindy keeps background-computer work visible without a duplicate running dot or route change
+  - `other-computer-running-mirror`：Merged Cindy keeps background-computer work visible without a duplicate running dot or route change
+  - `local-working-remote-selected`：Merged Cindy keeps background-computer work visible without a duplicate running dot or route change
+  - `group-types`：Group and private rows retain their original avatars without type markers; running/unread status semantics remain
+  - `group-avatars`：Collapsed one-to-five-member groups keep their composition and corner-dot space
+  - `states`：Shared solid-dot states in expanded rows and collapsed overflow
+  - `default`：Shell-mounted sidebar on default route; selected sixth row and reversible collapse
+  - `session`：Shell-mounted sidebar on session route; selected sixth row and reversible collapse
+  - `history`：Shell-mounted sidebar on history route; selected sixth row and reversible collapse
+  - `direct`：Shell-mounted sidebar on direct route; selected sixth row and reversible collapse
+  - `remote`：Shell-mounted sidebar on remote route; selected sixth row and reversible collapse
+  - `merged-cindy`：Shell-mounted sidebar on merged-cindy route; selected sixth row and reversible collapse
+  - `long-speakers-11`：Long speaking member names ellipsize before the unread count in a narrow sidebar
+  - `long-speakers-999`：Long speaking member names ellipsize before the unread count in a narrow sidebar
+  - `collapsed-mention`：Collapsed strip: running stays orange, group mentions blue, ordinary group unread blue
+  - `collapsed-plain`：Collapsed strip: ordinary group unread stays blue and selection uses an outline
+  - `device-names`：Duplicate and missing computer names never expose device fingerprints in teammate rows
+  - 未覆盖：Roster loading, cloud/device connections, create/delete menus and message delivery
+  - 场景替换的模块（未验证）：`src/renderer/contexts/AuthContext`、`src/renderer/state/agentIslandActivity`、`src/renderer/features/bots/useRemoteBots`、`src/renderer/features/bots/companionCloudStore`、`src/renderer/features/device-link/useDeviceLinkDeviceList`、`src/renderer/features/bots/BotCreateMenu`、`src/renderer/features/bots/BotDeleteDialog`、`src/renderer/features/bots/botGroupStore`、`src/renderer/features/bots/botStore`
+- 页面 `thread-panels`：light / dark · zh-CN · 960×640 / 640×800 / 800×650
+  - `group`：Group topic with a long source message and working follow switch, with and without wallpaper
+  - `group-attachments`：Thread + menu, image-only send and tray reset at narrow panel width
+  - `group-cache-pending`：Reopen a thread before its delayed image cache finishes; retain the image and newer text
+  - `default`：Private topic opening with the same long source message
+  - `failed`：Private topic failure keeps the entire source and retry reachable
+  - `group-narrow`：2026-10-29: 320px topic preserves bubble width, readable table columns and bounded file chips
+  - `composer-attachments`：Review regression: multiline group draft and 分工 must not clip attachment removal
+  - 未覆盖：Private ready-state task runtime, model execution, real media upload, server persistence and attachment IO; attachment selection and layout use scenario host data
+  - 场景替换的模块（未验证）：`src/renderer/lib/makerChatStore`、`src/renderer/features/cc-agent/CCAgentSessionView`
+- 页面 `unified-model-rail`：light / dark · zh-CN · 780×640
+  - `default`：「全部」视图:联合列表 + 侧栏 rail 全格
+  - `recent`：「最近」视图:三态 Fast 载体(`ultrafast`/`true`)的条目后缀原样保留
+  - `cindy-personal`：Personal Cindy AI source identity in the real model selector
+  - `cindy-xd`：XD Cindy AI source identity beside the unchanged Auto model
+  - `cindy-organization`：Long organization name in the real provider rail
+  - 未覆盖：Account entitlement, live model calls, database persistence and native mobile controls
+- 页面 `wechat-companion`：light / dark · zh-CN · 620×900 / 360×900 / 1280×900 / 1280×1000 / 1280×1100
+  - `default`：New WeChat connection for a teammate
+  - `existing`：Reuse the already authorized personal WeChat connection
+  - `assigned`：Connected teammate and remove-link action
+  - `other`：Another teammate owns this connection
+  - `feishu-hidden-tasks`：Clickable hidden IM records and independent restart action
+  - `feishu-hidden-tasks-narrow`：Hidden IM records in a narrow window
+  - `sidebar-394`：#6706: 394px card in a wide window
+  - `sidebar-320`：320px card keeps summary, status and chevron visible
+  - `wide-settings`：760px settings card keeps a compact horizontal header
+  - `long-name`：Long unbroken teammate name wraps without hiding the connected status
+  - `header-action`：Independent sibling-channel switch and long route summary at 320px
+  - `header-action-empty`：Independent switch without a route summary in a wide settings card
+  - `sidebar-empty-320`：Review #6729: empty summary keeps status and chevron at the right edge after wrapping
+  - `header-action-empty-320`：Empty summary with an independent switch at 320px
+  - `header-action-empty-394`：Empty summary with an independent switch at 394px
+  - 未覆盖：Real account login, Tencent scan authorization, persisted binding, message delivery, full-app history navigation and live agent execution
+- 未通过：`group-chat.body-answer.light.zh-CN.720x700` — locator.waitFor: Timeout 10000ms exceeded.
+- 未通过：`group-chat.body-answer.dark.zh-CN.720x700` — locator.waitFor: Timeout 10000ms exceeded.
+- 未通过：`group-jump-bottom.thread-process.light.zh-CN.1280x800` — AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+- 未通过：`group-jump-bottom.thread-process.dark.zh-CN.1280x800` — AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+- 未通过：`im-default-model.default.light.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.default.dark.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-automatic.light.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-automatic.dark.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-fixed.light.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-fixed.dark.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-unavailable.light.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-unavailable.dark.zh-CN.660x520` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-narrow.light.zh-CN.320x640` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`im-default-model.im-narrow.dark.zh-CN.320x640` — Error: page failed to start: Uncaught Error: useAuth must be used within AuthProvider
+- 未通过：`plugin-install-mail.participant-avatars.light.zh-CN.360x720` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`plugin-install-mail.participant-avatars.dark.zh-CN.360x720` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`plugin-install-mail.read-mail-body.light.zh-CN.360x600` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`plugin-install-mail.read-mail-body.dark.zh-CN.360x600` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`plugin-install-mail.two-mail-views.light.zh-CN.700x600` — Error: page failed to start: ResizeObserver loop completed with undelivered notifications.
+- 未通过：`plugin-install-mail.two-mail-views.dark.zh-CN.700x600` — Error: page failed to start: ResizeObserver loop completed with undelivered notifications.
+- 未通过：`plugin-install-mail.edit-mail-body.light.zh-CN.700x600` — Error: page failed to start: ResizeObserver loop completed with undelivered notifications.
+- 未通过：`plugin-install-mail.edit-mail-body.dark.zh-CN.700x600` — Error: page failed to start: ResizeObserver loop completed with undelivered notifications.
+- 未通过：`plugin-install-mail.refresh-mail-body.light.zh-CN.700x600` — Error: page failed to start: ResizeObserver loop completed with undelivered notifications.
+- 未通过：`plugin-install-mail.refresh-mail-body.dark.zh-CN.700x600` — Error: page failed to start: ResizeObserver loop completed with undelivered notifications.
+- 未通过：`pr-popover.default.light.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.default.dark.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.idle.light.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.idle.dark.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.hover.light.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.hover.dark.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.settings.light.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+- 未通过：`pr-popover.settings.dark.zh-CN.920x850` — Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.
+
+<!-- 截图：overview.png、overview-2.png、overview-3.png、overview-4.png、overview-5.png、overview-6.png、overview-7.png、overview-8.png、overview-9.png、overview-10.png、overview-11.png、overview-12.png、overview-13.png、overview-14.png、overview-15.png、overview-16.png、overview-17.png、overview-18.png、overview-19.png、overview-20.png、overview-21.png、overview-22.png、overview-23.png、overview-24.png、overview-25.png、overview-26.png、overview-27.png、overview-28.png、overview-29.png、overview-30.png、overview-31.png、overview-32.png、overview-33.png、overview-34.png、overview-35.png、overview-36.png、overview-37.png、overview-38.png、overview-39.png、overview-40.png、overview-41.png、overview-42.png、overview-43.png、overview-44.png、overview-45.png、overview-46.png、overview-47.png、overview-48.png、overview-49.png、overview-50.png、overview-51.png、overview-52.png、overview-53.png、overview-54.png、overview-55.png、overview-56.png、overview-57.png、overview-58.png、overview-59.png、overview-60.png、overview-61.png、overview-62.png、overview-63.png、overview-64.png、overview-65.png、overview-66.png、overview-67.png、overview-68.png、overview-69.png、overview-70.png、overview-71.png、overview-72.png、overview-73.png、overview-74.png、overview-75.png、overview-76.png、overview-77.png、overview-78.png、overview-79.png、overview-80.png、overview-81.png、overview-82.png、overview-83.png、overview-84.png、overview-85.png、overview-86.png、overview-87.png、overview-88.png、overview-89.png、overview-90.png、overview-91.png、overview-92.png、overview-93.png、overview-94.png、overview-95.png、overview-96.png、overview-97.png、overview-98.png、overview-99.png、overview-100.png、overview-101.png、overview-102.png、overview-103.png、overview-104.png、overview-105.png、overview-106.png、overview-107.png、overview-108.png、overview-109.png、overview-110.png、overview-111.png、overview-112.png、overview-113.png、overview-114.png、overview-115.png、overview-116.png、overview-117.png、overview-118.png、overview-119.png、overview-120.png、overview-121.png、overview-122.png、overview-123.png、overview-124.png、overview-125.png、overview-126.png、overview-127.png、overview-128.png、overview-129.png、overview-130.png、overview-131.png、overview-132.png、overview-133.png、overview-134.png、overview-135.png、overview-136.png、overview-137.png、overview-138.png、overview-139.png、overview-140.png、overview-141.png、overview-142.png、overview-143.png、overview-144.png、overview-145.png、overview-146.png、overview-147.png -->
